@@ -131,6 +131,11 @@ const Footer = () => {
           <div>
             Universo Nómada © {new Date().getFullYear()}
           </div>
+          <div>
+            <Link to="/admin/login" className="text-gray-500 hover:text-primary-orange transition-colors text-xs">
+              Acceso Administrador
+            </Link>
+          </div>
         </div>
 
         {/* Botón de WhatsApp flotante */}
@@ -151,4 +156,4 @@ const Footer = () => {
   );
 };
 
-export default Footer; 
+export default Footer;
