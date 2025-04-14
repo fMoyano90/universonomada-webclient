@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   IoHomeOutline, 
   IoImageOutline, 
@@ -11,6 +11,7 @@ import {
   IoCalendarOutline // Import calendar icon for bookings
 } from 'react-icons/io5';
 import Logo from './Logo'; // Assuming you have a Logo component
+import authService from '../services/auth.service';
 
 // Admin Header Component
 interface AdminHeaderProps {
@@ -18,6 +19,13 @@ interface AdminHeaderProps {
   isSidebarOpen: boolean;
 }
 const AdminHeader: React.FC<AdminHeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        authService.logout();
+        navigate('/admin/login');
+    };
+
     return (
         <header className="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-4 shadow-md flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center">
@@ -36,7 +44,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ toggleSidebar, isSidebarOpen 
             </div>
             <div>
                 {/* Placeholder for User menu/logout */}
-                <button className="flex items-center text-white p-2 rounded-md hover:bg-blue-800 transition-colors duration-200">
+                <button 
+                    onClick={handleLogout}
+                    className="flex items-center text-white p-2 rounded-md hover:bg-blue-800 transition-colors duration-200"
+                >
                     <IoLogOutOutline size={20} className="mr-2"/> 
                     <span>Cerrar Sesión</span>
                 </button>

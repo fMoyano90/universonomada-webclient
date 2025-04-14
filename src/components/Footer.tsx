@@ -1,20 +1,43 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo-blanco.svg';
+import subscriptionService from '../services/subscription.service';
+
 const Footer = () => {
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí iría la lógica para procesar la suscripción
-    console.log('Email para suscripción:', email);
-    setEmail('');
-    // Implementar llamada a API para guardar el email
+    
+    if (!email || !email.includes('@')) {
+      toast.error('Por favor, ingresa un email válido');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      await subscriptionService.createSubscription(email);
+      toast.success('¡Te has suscrito exitosamente!', {
+        duration: 4000,
+        icon: '🎉'
+      });
+      setEmail('');
+    } catch (error) {
+      console.error('Error al suscribirse:', error);
+      toast.error('No se pudo completar tu suscripción. Por favor, inténtalo más tarde.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <footer className="bg-black text-white pt-16 pb-6">
+      <Toaster position="top-center" toastOptions={{ className: 'text-sm font-medium' }} />
+      
       {/* Sección de suscripción */}
       <div className="container mx-auto max-w-6xl px-4">
         <div className="bg-primary-green-light rounded-xl p-8 mb-16 -mt-24 relative shadow-xl">
@@ -31,13 +54,15 @@ const Footer = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="flex-1 py-3 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              disabled={isSubmitting}
+              className="flex-1 py-3 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue text-black"
             />
             <button 
               type="submit" 
-              className="bg-black text-white py-3 px-8 rounded-md hover:bg-gray-800 transition-colors"
+              disabled={isSubmitting}
+              className="bg-black text-white py-3 px-8 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Suscribirme
+              {isSubmitting ? 'Procesando...' : 'Suscribirme'}
             </button>
           </form>
         </div>

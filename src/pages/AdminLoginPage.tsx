@@ -1,69 +1,80 @@
 import React, { useState } from 'react';
-// import { useNavigate } from 'react-router-dom'; // Commented out as it's not used yet
+import { useNavigate } from 'react-router-dom';
+import authService from '../services/auth.service';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const AdminLoginPage: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  // const navigate = useNavigate(); // Commented out as it's not used yet
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Clear previous errors
-
-    // Basic validation
-    if (!username || !password) {
-      setError('Por favor, ingresa usuario y contraseña.');
-      return;
-    }
+    setError('');
+    setIsLoading(true);
 
     try {
-      // TODO: Implement actual login logic here
-      // Example: Call an API endpoint
-      // const response = await fetch('/api/admin/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ username, password }),
-      // });
-      // if (!response.ok) {
-      //   throw new Error('Credenciales inválidas');
-      // }
-      // const data = await response.json();
-      // Store token, redirect, etc.
-      
-      console.log('Login attempt with:', { username, password });
-      // Simulate successful login for now
-      alert('Inicio de sesión exitoso (simulado)');
-      // Redirect to an admin dashboard (replace '/admin/dashboard' with the actual path)
-      // navigate('/admin/dashboard'); 
+      if (!email || !password) {
+        throw new Error('Por favor, ingresa email y contraseña.');
+      }
 
+      const response = await authService.login({ email, password });
+      
+      if (!response?.data?.user?.role) {
+        throw new Error('Error en la respuesta del servidor');
+      }
+
+      if (response.data.user.role !== 'admin') {
+        throw new Error('No tienes permisos de administrador');
+      }
+
+      // Redirigir al home del admin
+      navigate('/admin');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       console.error('Login failed:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else {
+        setError('Error al iniciar sesión');
+      }
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900">Acceso Administrador</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-900">
+          Acceso Administrador
+        </h2>
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label 
-              htmlFor="username" 
+              htmlFor="email" 
               className="block text-sm font-medium text-gray-700"
             >
-              Usuario
+              Email
             </label>
             <input
-              id="username"
-              name="username"
-              type="text"
-              autoComplete="username"
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
               required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -73,16 +84,30 @@ const AdminLoginPage: React.FC = () => {
             >
               Contraseña
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
-            />
+            <div className="relative mt-1">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm pr-10"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                {showPassword ? (
+                  <FaEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                ) : (
+                  <FaEyeSlash className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                )}
+              </button>
+            </div>
           </div>
           {error && (
             <p className="text-sm text-red-600 text-center">{error}</p>
@@ -90,9 +115,10 @@ const AdminLoginPage: React.FC = () => {
           <div>
             <button
               type="submit"
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-blue border border-transparent rounded-md shadow-sm hover:bg-primary-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue"
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-blue border border-transparent rounded-md shadow-sm hover:bg-primary-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              Ingresar
+              {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
             </button>
           </div>
         </form>
