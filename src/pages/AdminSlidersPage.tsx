@@ -22,6 +22,10 @@ const AdminSlidersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSlider, setCurrentSlider] = useState<Slider | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Formulario para nuevo/editar slider
   const [formData, setFormData] = useState({
@@ -45,9 +49,29 @@ const AdminSlidersPage: React.FC = () => {
     setError(null);
     try {
       const response = await axios.get(`${API_URL}/sliders`);
-      setSliders(response.data.data || []);
+      console.log('Respuesta completa:', response.data);
+      
+      // Manejar estructura anidada
+      let slidersData;
+      
+      // Verificar si hay datos anidados (data.data)
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        slidersData = response.data.data;
+      } else if (response.data && response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
+        // Doble anidamiento data.data.data
+        slidersData = response.data.data.data;
+      } else {
+        // Fallback si la estructura no coincide con lo esperado
+        slidersData = [];
+        console.error('Estructura de datos inesperada:', response.data);
+        setError('El formato de datos recibido no es el esperado');
+      }
+      
+      console.log('Datos procesados para mostrar:', slidersData);
+      setSliders(slidersData);
     } catch (err) {
       console.error("Error fetching sliders:", err);
+      setSliders([]);
       setError('Error al cargar los sliders');
     } finally {
       setIsLoading(false);
@@ -59,22 +83,52 @@ const AdminSlidersPage: React.FC = () => {
     try {
       const token = authService.getAuthToken();
       const headers = {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       };
+
+      // Crear FormData para enviar la imagen si existe
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('subtitle', formData.subtitle);
+      formDataToSend.append('location', formData.location);
+      
+      // Si tenemos un archivo, lo adjuntamos
+      if (imageFile) {
+        formDataToSend.append('image', imageFile);
+      } else if (formData.imageUrl) {
+        // Si no hay archivo pero sí URL, usamos esa
+        formDataToSend.append('imageUrl', formData.imageUrl);
+      }
+      
+      // Solo agregamos buttonText y buttonUrl si no están vacíos
+      if (formData.buttonText?.trim()) {
+        formDataToSend.append('buttonText', formData.buttonText);
+      }
+      
+      if (formData.buttonUrl?.trim()) {
+        formDataToSend.append('buttonUrl', formData.buttonUrl);
+      }
+      
+      formDataToSend.append('isActive', String(formData.isActive));
+
+      // Depurar el contenido del FormData
+      console.log('Enviando datos:');
+      for (const [key, value] of formDataToSend.entries()) {
+        console.log(`${key}: ${value}`);
+      }
 
       if (currentSlider) {
         // Actualizar slider existente
         await axios.put(
           `${API_URL}/sliders/${currentSlider.id}`,
-          formData,
+          formDataToSend,
           { headers }
         );
       } else {
         // Crear nuevo slider
         await axios.post(
           `${API_URL}/sliders`,
-          formData,
+          formDataToSend,
           { headers }
         );
       }
@@ -84,9 +138,23 @@ const AdminSlidersPage: React.FC = () => {
       resetForm();
       fetchSliders();
 
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error saving slider:", err);
-      setError('Error al guardar el slider');
+      let errorMessage = 'Error al guardar el slider';
+      
+      // Intentar mostrar detalles del error si están disponibles
+      if (err && typeof err === 'object' && 'response' in err) {
+        const errorObj = err as { response?: { data?: { message?: string | string[] } } };
+        if (errorObj.response?.data?.message) {
+          if (Array.isArray(errorObj.response.data.message)) {
+            errorMessage += ': ' + errorObj.response.data.message.join(', ');
+          } else {
+            errorMessage += ': ' + errorObj.response.data.message;
+          }
+        }
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -140,6 +208,37 @@ const AdminSlidersPage: React.FC = () => {
       isActive: true
     });
     setCurrentSlider(null);
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (file: File) => {
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    // Limpiar URL si hay archivo
+    setFormData({...formData, imageUrl: ''});
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        handleImageChange(file);
+      }
+    }
   };
 
   if (isLoading) return (
@@ -199,7 +298,7 @@ const AdminSlidersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sliders.map((slider) => (
+              {Array.isArray(sliders) && sliders.map((slider) => (
                 <tr key={slider.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img 
@@ -260,6 +359,8 @@ const AdminSlidersPage: React.FC = () => {
                           buttonUrl: slider.buttonUrl || '',
                           isActive: slider.isActive
                         });
+                        setImageFile(null);
+                        setImagePreview(null);
                         setIsModalOpen(true);
                       }}
                       className="text-primary-blue hover:text-primary-blue-dark mr-4"
@@ -335,26 +436,92 @@ const AdminSlidersPage: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  URL de la Imagen
+                  Imagen
                 </label>
-                <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue"
-                  required
-                />
-                {formData.imageUrl && (
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500 mb-1">Vista previa:</p>
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Vista previa" 
-                      className="h-32 object-cover rounded border border-gray-200" 
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=Error+de+imagen';
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isDragging ? 'border-primary-blue bg-blue-50' : 'border-gray-300'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="text-center cursor-pointer">
+                    <div className="flex flex-col items-center">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Arrastra y suelta una imagen aquí, o haz clic para seleccionar
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        PNG, JPG, GIF hasta 10MB
+                      </p>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleImageChange(file);
+                        }
                       }}
                     />
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <div className="flex items-center">
+                    <span className="text-sm text-gray-500">O usar ruta de imagen:</span>
+                    <input
+                      type="text"
+                      value={formData.imageUrl}
+                      onChange={(e) => {
+                        setFormData({...formData, imageUrl: e.target.value});
+                        // Limpiar archivo si hay ruta
+                        if (e.target.value) {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }
+                      }}
+                      className="ml-2 flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue"
+                      placeholder="/images/ejemplo.jpg"
+                    />
+                  </div>
+                </div>
+                
+                {(imagePreview || formData.imageUrl) && (
+                  <div className="mt-4">
+                    <p className="text-xs text-gray-500 mb-1">Vista previa:</p>
+                    <div className="relative">
+                      <img 
+                        src={imagePreview || formData.imageUrl} 
+                        alt="Vista previa" 
+                        className="h-40 w-full object-cover rounded border border-gray-200" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=Error+de+imagen';
+                        }}
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                          setFormData({...formData, imageUrl: ''});
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        title="Eliminar imagen"
+                      >
+                        <IoTrash size={16} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -376,10 +543,11 @@ const AdminSlidersPage: React.FC = () => {
                   URL del Botón
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   value={formData.buttonUrl}
                   onChange={(e) => setFormData({...formData, buttonUrl: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue"
+                  placeholder="/destino/ejemplo"
                 />
               </div>
               

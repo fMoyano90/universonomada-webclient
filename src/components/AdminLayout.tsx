@@ -8,7 +8,8 @@ import {
   IoMenuOutline, 
   IoChevronBack, // Import the chevron icon
   IoLogOutOutline, // Import logout icon
-  IoCalendarOutline // Import calendar icon for bookings
+  IoCalendarOutline, // Import calendar icon for bookings
+  IoChatboxOutline // Import icon for testimonials
 } from 'react-icons/io5';
 import Logo from './Logo'; // Assuming you have a Logo component
 import authService from '../services/auth.service';
@@ -67,6 +68,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isSidebarOpen }) => {
         { path: '/admin', icon: IoHomeOutline, label: 'Dashboard' },
         { path: '/admin/sliders', icon: IoImageOutline, label: 'Sliders' },
         { path: '/admin/destinations', icon: IoMapOutline, label: 'Destinos' },
+        { path: '/admin/testimonials', icon: IoChatboxOutline, label: 'Testimonios' },
         { path: '/admin/subscriptions', icon: IoMailOutline, label: 'Suscripciones' },
         { path: '/admin/bookings', icon: IoCalendarOutline, label: 'Reservas/Cotizaciones' },
     ];

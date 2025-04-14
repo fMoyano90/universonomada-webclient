@@ -13,6 +13,7 @@ import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
 import AdminBookingsPage from './pages/AdminBookingsPage';
 import AdminSlidersPage from './pages/AdminSlidersPage'; // Import Sliders Page
 import AdminDestinationsPage from './pages/AdminDestinationsPage'; // Import Destinations Page
+import AdminTestimonialsPage from './pages/AdminTestimonialsPage'; // Import Testimonials Page
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -58,6 +59,7 @@ function App() {
           <Route index element={<AdminHomePage />} />
           <Route path="sliders" element={<AdminSlidersPage />} />
           <Route path="destinations" element={<AdminDestinationsPage />} />
+          <Route path="testimonials" element={<AdminTestimonialsPage />} />
           <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
         </Route>
