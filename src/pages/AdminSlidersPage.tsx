@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { IoAdd, IoTrash, IoCreate, IoArrowUp, IoArrowDown } from 'react-icons/io5';
 import axios from 'axios';
 import authService from '../services/auth.service';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Slider {
   id: number;
@@ -80,6 +81,10 @@ const AdminSlidersPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Crear un toast de carga
+    const loadingToast = toast.loading('Guardando slider...');
+    
     try {
       const token = authService.getAuthToken();
       const headers = {
@@ -124,6 +129,8 @@ const AdminSlidersPage: React.FC = () => {
           formDataToSend,
           { headers }
         );
+        // Mostrar mensaje de éxito
+        toast.success('Slider actualizado correctamente', { id: loadingToast });
       } else {
         // Crear nuevo slider
         await axios.post(
@@ -131,6 +138,8 @@ const AdminSlidersPage: React.FC = () => {
           formDataToSend,
           { headers }
         );
+        // Mostrar mensaje de éxito
+        toast.success('Slider creado correctamente', { id: loadingToast });
       }
 
       // Cerrar modal y refrescar datos
@@ -154,12 +163,17 @@ const AdminSlidersPage: React.FC = () => {
         }
       }
       
+      // Mostrar mensaje de error
+      toast.error(errorMessage, { id: loadingToast });
       setError(errorMessage);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este slider?')) {
+      // Crear toast de carga
+      const loadingToast = toast.loading('Eliminando slider...');
+      
       try {
         const token = authService.getAuthToken();
         await axios.delete(`${API_URL}/sliders/${id}`, {
@@ -168,15 +182,20 @@ const AdminSlidersPage: React.FC = () => {
           }
         });
         
+        // Mostrar mensaje de éxito
+        toast.success('Slider eliminado correctamente', { id: loadingToast });
         fetchSliders();
       } catch (err) {
         console.error("Error deleting slider:", err);
+        toast.error('Error al eliminar el slider', { id: loadingToast });
         setError('Error al eliminar el slider');
       }
     }
   };
 
   const handleReorder = async (id: number, direction: 'up' | 'down') => {
+    const loadingToast = toast.loading('Reordenando slider...');
+    
     try {
       const token = authService.getAuthToken();
       await axios.put(
@@ -190,9 +209,11 @@ const AdminSlidersPage: React.FC = () => {
         }
       );
       
+      toast.success('Slider reordenado correctamente', { id: loadingToast });
       fetchSliders();
     } catch (err) {
       console.error("Error reordering slider:", err);
+      toast.error('Error al reordenar el slider', { id: loadingToast });
       setError('Error al reordenar los sliders');
     }
   };
@@ -249,6 +270,36 @@ const AdminSlidersPage: React.FC = () => {
 
   return (
     <div className="p-6">
+      {/* Componente Toaster para mostrar las notificaciones */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          success: {
+            duration: 3000,
+            style: {
+              background: '#E6F4EA',
+              color: '#0F5132',
+              border: '1px solid #0F5132'
+            },
+          },
+          error: {
+            duration: 4000,
+            style: {
+              background: '#FEE2E2',
+              color: '#B91C1C',
+              border: '1px solid #B91C1C'
+            },
+          },
+          loading: {
+            style: {
+              background: '#EFF6FF',
+              color: '#1E40AF',
+              border: '1px solid #1E40AF'
+            },
+          },
+        }}
+      />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gestionar Sliders</h1>
         <button
