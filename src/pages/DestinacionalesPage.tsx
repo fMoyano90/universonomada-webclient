@@ -1,142 +1,126 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import destinationService from '../services/destination.service';
 
-// Datos de ejemplo para destinos nacionales
-const destinos = [
-  {
-    id: 1,
-    title: 'Carretera Austral Sur',
-    description: 'Un recorrido por paisajes impresionantes en la zona sur de Chile',
-    price: 835000,
-    duration: '6 días y 5 noches',
-    location: 'Patagonia, Chile',
-    image: 'https://images.unsplash.com/photo-1589499417958-cf306ae75071?q=80&w=2070&auto=format&fit=crop',
-    isNacional: true,
-    isBlackSale: true,
-    days: 6,
-    nights: 5
-  },
-  {
-    id: 2,
-    title: 'Laguna San Rafael + PN Queulat',
-    description: 'Explora glaciares milenarios y bosques vírgenes',
-    price: 815000,
-    duration: '5 días y 4 noches',
-    location: 'Aysén, Chile',
-    image: 'https://images.unsplash.com/photo-1598976796336-63db295ccde2?q=80&w=2070&auto=format&fit=crop',
-    isNacional: true,
-    isBlackSale: true,
-    days: 5,
-    nights: 4
-  },
-  {
-    id: 3,
-    title: 'Puerto Varas & Cochamó',
-    description: 'Descubre la belleza del sur entre lagos y montañas',
-    price: 495000,
-    duration: '4 días y 3 noches',
-    location: 'Los Lagos, Chile',
-    image: 'https://images.unsplash.com/photo-1617153819971-3f5786781684?q=80&w=2070&auto=format&fit=crop',
-    isNacional: true,
-    isBlackSale: true,
-    days: 4,
-    nights: 3
-  },
-  {
-    id: 4,
-    title: 'Valle del Elqui',
-    description: 'Conecta con el universo en el valle astronómico de Chile',
-    price: 380000,
-    duration: '3 días y 2 noches',
-    location: 'Coquimbo, Chile',
-    image: 'https://images.unsplash.com/photo-1528283648649-33347faa5d9e?q=80&w=2070&auto=format&fit=crop',
-    isNacional: true,
-    isBlackSale: true,
-    days: 3,
-    nights: 2
-  },
-  {
-    id: 5,
-    title: 'Torres del Paine Invierno',
-    description: 'Una experiencia única en la Patagonia durante el invierno',
-    price: 780000,
-    duration: '5 días y 4 noches',
-    location: 'Magallanes, Chile',
-    image: 'https://images.unsplash.com/photo-1598025362006-4b03eadf9a9f?q=80&w=2066&auto=format&fit=crop',
-    isNacional: true,
-    isBlackSale: true,
-    days: 5,
-    nights: 4
-  },
-  {
-    id: 6,
-    title: 'Valle Nevado',
-    description: 'Aventura en la nieve a pocos kilómetros de Santiago',
-    price: 420000,
-    duration: '3 días y 2 noches',
-    location: 'Santiago, Chile',
-    image: 'https://images.unsplash.com/photo-1551524559-8af4e6624178?q=80&w=2025&auto=format&fit=crop',
-    isNacional: true,
-    isBlackSale: true,
-    days: 3,
-    nights: 2
-  }
-];
+// Interfaz para los datos de destino
+interface Destination {
+  id: number;
+  title: string;
+  slug: string;
+  imageSrc: string;
+  type: string;
+  description: string;
+  duration?: string; // Añadir campo duration que viene de la API
+  days?: number; 
+  nights?: number;
+  price?: number | string; // Precio puede venir como string
+  isRecommended?: boolean;
+  isSpecial?: boolean;
+  galleryImages?: string[];
+  location?: string;
+}
 
 const DestinacionalesPage = () => {
-  // Estados para filtros y ordenamiento
-  const [filterAvailability, setFilterAvailability] = useState<string>('todos');
-  const [filterPrice, setFilterPrice] = useState<string>('todos');
-  const [sortBy, setSortBy] = useState<string>('Características');
+  // Estado para almacenar los destinos
+  const [destinos, setDestinos] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Controlar apertura de dropdowns
-  const [availabilityOpen, setAvailabilityOpen] = useState(false);
-  const [priceOpen, setPriceOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const itemsPerPage = 6; // Número fijo de elementos por página
+  
+  // Cargar destinos desde la API
+  useEffect(() => {
+    const fetchDestinos = async () => {
+      try {
+        setLoading(true);
+        console.log('Iniciando fetch de destinos nacionales...');
+        
+        const response = await destinationService.getPaginatedDestinationsByType(
+          'nacional',
+          currentPage,
+          itemsPerPage
+        );
+        
+        console.log('Respuesta API:', response);
+        
+        // Navegamos a través de la estructura de respuesta
+        const data = response?.data?.data?.data || [];
+        const meta = response?.data?.data?.meta || { total: 0, totalPages: 1, page: 1, limit: itemsPerPage };
+        
+        console.log('Datos procesados:', { data, meta });
+        
+        setDestinos(data);
+        setTotalPages(meta.totalPages || 1);
+        setTotalItems(meta.total || 0);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error al obtener destinos nacionales:', err);
+        setError('Error al cargar los destinos. Por favor, intente nuevamente.');
+        setLoading(false);
+      }
+    };
+    
+    fetchDestinos();
+  }, [currentPage]);
 
-  // Filtrar destinos según criterios
-  const destinosFiltrados = destinos.filter(destino => {
-    let cumpleFiltroDisponibilidad = true;
-    let cumpleFiltroPrecio = true;
-    
-    // Filtro por disponibilidad (ejemplo)
-    if (filterAvailability === 'disponible') {
-      cumpleFiltroDisponibilidad = true; // Aquí iría lógica real
-    } else if (filterAvailability === 'agotado') {
-      cumpleFiltroDisponibilidad = false; // Aquí iría lógica real
+  // Cambiar a la página siguiente
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
     }
-    
-    // Filtro por precio
-    if (filterPrice === 'bajo') {
-      cumpleFiltroPrecio = destino.price < 500000;
-    } else if (filterPrice === 'medio') {
-      cumpleFiltroPrecio = destino.price >= 500000 && destino.price < 700000;
-    } else if (filterPrice === 'alto') {
-      cumpleFiltroPrecio = destino.price >= 700000;
+  };
+  
+  // Cambiar a la página anterior
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
-    
-    return cumpleFiltroDisponibilidad && cumpleFiltroPrecio;
-  });
-  
-  // Ordenar destinos
-  const destinosOrdenados = [...destinosFiltrados];
-  
-  if (sortBy === 'precio-asc') {
-    destinosOrdenados.sort((a, b) => a.price - b.price);
-  } else if (sortBy === 'precio-desc') {
-    destinosOrdenados.sort((a, b) => b.price - a.price);
-  } else if (sortBy === 'duracion') {
-    destinosOrdenados.sort((a, b) => {
-      const duracionA = parseInt(a.duration.split(' ')[0]);
-      const duracionB = parseInt(b.duration.split(' ')[0]);
-      return duracionB - duracionA;
-    });
-  }
+  };
+
+  // Cambiar a una página específica
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Función para formatear precio
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number = 0): string => {
     return new Intl.NumberFormat('es-CL').format(price);
+  };
+
+  // Renderizar páginas de paginación
+  const renderPaginationNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageClick(i)}
+          className={`px-3 py-1 mx-1 rounded ${
+            i === currentPage
+              ? 'bg-primary-blue text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+    
+    return pages;
   };
 
   return (
@@ -144,273 +128,133 @@ const DestinacionalesPage = () => {
       <div className="container mx-auto max-w-6xl px-4">
         <h1 className="text-4xl md:text-5xl font-bold text-center mb-12">Nacionales</h1>
         
-        {/* Filtros y ordenamiento */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 space-y-4 md:space-y-0">
-          {/* Filtros */}
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="font-medium">Filtrar:</span>
-            
-            {/* Filtro disponibilidad */}
-            <div className="relative">
-              <button 
-                className="flex items-center space-x-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none"
-                onClick={() => {
-                  setAvailabilityOpen(!availabilityOpen);
-                  setPriceOpen(false);
-                  setSortOpen(false);
-                }}
-              >
-                <span>Availability</span>
-                <span className="ml-1">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`h-4 w-4 transition-transform ${availabilityOpen ? 'transform rotate-180' : ''}`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </span>
-              </button>
-              
-              {availabilityOpen && (
-                <div className="absolute z-10 mt-1 w-40 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div className="py-1">
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterAvailability === 'todos' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterAvailability('todos');
-                        setAvailabilityOpen(false);
-                      }}
-                    >
-                      Todos
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterAvailability === 'disponible' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterAvailability('disponible');
-                        setAvailabilityOpen(false);
-                      }}
-                    >
-                      Disponible
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterAvailability === 'agotado' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterAvailability('agotado');
-                        setAvailabilityOpen(false);
-                      }}
-                    >
-                      Agotado
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Filtro precio */}
-            <div className="relative">
-              <button 
-                className="flex items-center space-x-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none"
-                onClick={() => {
-                  setPriceOpen(!priceOpen);
-                  setAvailabilityOpen(false);
-                  setSortOpen(false);
-                }}
-              >
-                <span>Price</span>
-                <span className="ml-1">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`h-4 w-4 transition-transform ${priceOpen ? 'transform rotate-180' : ''}`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </span>
-              </button>
-              
-              {priceOpen && (
-                <div className="absolute z-10 mt-1 w-40 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div className="py-1">
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterPrice === 'todos' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterPrice('todos');
-                        setPriceOpen(false);
-                      }}
-                    >
-                      Todos
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterPrice === 'bajo' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterPrice('bajo');
-                        setPriceOpen(false);
-                      }}
-                    >
-                      Hasta $500.000
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterPrice === 'medio' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterPrice('medio');
-                        setPriceOpen(false);
-                      }}
-                    >
-                      $500.000 - $700.000
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${filterPrice === 'alto' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setFilterPrice('alto');
-                        setPriceOpen(false);
-                      }}
-                    >
-                      Más de $700.000
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Ordenamiento */}
-          <div className="flex items-center gap-3">
-            <span className="font-medium">Ordenar por:</span>
-            <div className="relative">
-              <button 
-                className="flex items-center space-x-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none min-w-[150px] justify-between"
-                onClick={() => {
-                  setSortOpen(!sortOpen);
-                  setAvailabilityOpen(false);
-                  setPriceOpen(false);
-                }}
-              >
-                <span>{sortBy === 'Características' ? 'Características' : 
-                       sortBy === 'precio-asc' ? 'Precio: menor a mayor' :
-                       sortBy === 'precio-desc' ? 'Precio: mayor a menor' :
-                       'Duración'}</span>
-                <span className="ml-1">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`h-4 w-4 transition-transform ${sortOpen ? 'transform rotate-180' : ''}`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </span>
-              </button>
-              
-              {sortOpen && (
-                <div className="absolute right-0 z-10 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div className="py-1">
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${sortBy === 'Características' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setSortBy('Características');
-                        setSortOpen(false);
-                      }}
-                    >
-                      Características
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${sortBy === 'precio-asc' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setSortBy('precio-asc');
-                        setSortOpen(false);
-                      }}
-                    >
-                      Precio: menor a mayor
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${sortBy === 'precio-desc' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setSortBy('precio-desc');
-                        setSortOpen(false);
-                      }}
-                    >
-                      Precio: mayor a menor
-                    </button>
-                    <button 
-                      className={`block px-4 py-2 text-sm w-full text-left ${sortBy === 'duracion' ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setSortBy('duracion');
-                        setSortOpen(false);
-                      }}
-                    >
-                      Duración
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="text-sm text-gray-500 ml-4">
-              {destinosOrdenados.length} producto{destinosOrdenados.length !== 1 ? 's' : ''}
-            </div>
+        {/* Información de resultados */}
+        <div className="flex justify-end mb-8">
+          <div className="text-sm text-gray-500">
+            {totalItems} destino{totalItems !== 1 ? 's' : ''}
           </div>
         </div>
         
+        {/* Estado de carga */}
+        {loading && (
+          <div className="text-center py-10">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-blue border-t-transparent"></div>
+            <p className="mt-3 text-gray-600">Cargando destinos...</p>
+          </div>
+        )}
+        
+        {/* Mensaje de error */}
+        {error && !loading && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-8">
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {/* Sin resultados */}
+        {!loading && !error && destinos.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-gray-600">No hay destinos disponibles en esta categoría.</p>
+          </div>
+        )}
+        
         {/* Grid de destinos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {destinosOrdenados.map((destino) => (
-            <motion.div 
-              key={destino.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -5 }}
-              className="rounded-2xl overflow-hidden shadow-lg bg-white group relative"
-            >
-              <Link to={`/destino/${destino.id}`} className="block relative">
-                <div className="relative h-60 overflow-hidden">
-                  <img 
-                    src={destino.image} 
-                    alt={destino.title} 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                  <div className="absolute top-4 left-4 bg-white py-1 px-4 rounded-full text-sm font-semibold text-primary-blue shadow-md">
-                    Nacional
-                  </div>
-                  {destino.isBlackSale && (
-                    <div className="absolute top-4 right-4 bg-primary-green-dark text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center">
-                      BLACK SALE
-                      <span className="ml-1">✈️</span>
+        {!loading && !error && destinos.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {destinos.map((destino) => (
+              <motion.div 
+                key={destino.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+                className="rounded-2xl overflow-hidden shadow-lg bg-white group relative"
+              >
+                <Link to={`/destino/${destino.id}`} className="block relative">
+                  <div className="relative h-60 overflow-hidden">
+                    <img 
+                      src={destino.imageSrc} 
+                      alt={destino.title} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                    <div className="absolute top-4 left-4 bg-white py-1 px-4 rounded-full text-sm font-semibold text-primary-blue shadow-md">
+                      Nacional
                     </div>
-                  )}
-                  <h3 className="absolute bottom-4 left-4 text-2xl font-bold text-white drop-shadow-md">{destino.title}</h3>
-                </div>
-                
-                <div className="p-5">
-                  <div className="flex items-center mb-3 text-gray-600 font-medium text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-primary-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {destino.days} días y {destino.nights} noches
+                    {destino.isSpecial && (
+                      <div className="absolute top-4 right-4 bg-primary-green-dark text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center">
+                        DESTACADO
+                        <span className="ml-1">✈️</span>
+                      </div>
+                    )}
+                    <h3 className="absolute bottom-4 left-4 text-2xl font-bold text-white drop-shadow-md">{destino.title}</h3>
                   </div>
-                  <div className="mb-4 border-t border-gray-100 pt-4">
-                    <p className="text-gray-500 text-sm">
-                      desde <span className="text-xl font-bold text-primary-blue">${formatPrice(destino.price)}</span> <span className="text-xs">CLP</span>
-                    </p>
+                  
+                  <div className="p-5">
+                    <div className="flex items-center mb-3 text-gray-600 font-medium text-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-primary-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {destino.duration || 'Consultar duración'}
+                    </div>
+                    {destino.location && (
+                      <div className="flex items-center mb-3 text-gray-600 font-medium text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-primary-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {destino.location}
+                      </div>
+                    )}
+                    <div className="mb-4 border-t border-gray-100 pt-4">
+                      <p className="text-gray-500 text-sm">
+                        desde <span className="text-xl font-bold text-primary-blue">
+                          ${formatPrice(typeof destino.price === 'string' ? parseFloat(destino.price) : destino.price)}
+                        </span> <span className="text-xs">CLP</span>
+                      </p>
+                    </div>
+                    <div 
+                      className="inline-block w-full text-center py-2 px-4 bg-white border border-primary-orange text-primary-orange rounded-lg font-medium hover:bg-primary-orange hover:text-white transition-colors duration-300 relative z-10"
+                    >
+                      Ver detalles
+                    </div>
                   </div>
-                  <div 
-                    className="inline-block w-full text-center py-2 px-4 bg-white border border-primary-orange text-primary-orange rounded-lg font-medium hover:bg-primary-orange hover:text-white transition-colors duration-300 relative z-10"
-                  >
-                    Ver detalles
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
+        
+        {/* Paginación */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="mt-10 flex justify-center items-center">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded mx-1 ${
+                currentPage === 1
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              &laquo; Anterior
+            </button>
+            
+            {renderPaginationNumbers()}
+            
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 rounded mx-1 ${
+                currentPage === totalPages
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Siguiente &raquo;
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

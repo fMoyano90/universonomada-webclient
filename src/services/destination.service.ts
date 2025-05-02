@@ -19,6 +19,17 @@ interface DestinationResponse {
   updatedAt?: string;
 }
 
+// Interfaz para respuesta paginada
+interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 class DestinationService {
   private static instance: DestinationService;
   
@@ -100,6 +111,32 @@ class DestinationService {
       
       return response.data;
     } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene destinos paginados por tipo
+   * @param type Tipo de destino ('nacional' o 'internacional')
+   * @param page Número de página
+   * @param limit Número de elementos por página
+   * @returns Promesa con los destinos paginados
+   */
+  async getPaginatedDestinationsByType(
+    type: string, 
+    page = 1, 
+    limit = 10
+  ): Promise<any> {
+    try {
+      const response = await axios.get(`${API_URL}/destinations/type/${type}`, {
+        params: { page, limit }
+      });
+      
+      // Devolvemos la respuesta completa y dejamos que el componente maneje la estructura
+      return response.data;
+    } catch (error) {
+      console.error('Error completo al obtener destinos:', error);
       this.handleError(error);
       throw error;
     }
