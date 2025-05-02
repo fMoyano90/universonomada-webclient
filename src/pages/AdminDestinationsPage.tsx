@@ -1,45 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import AdminDestinationForm from "../components/AdminDestinationForm";
 import authService from "../services/auth.service";
+import { Destination } from "../components/interfaces";
 
 // Interfaces
-interface ItineraryItem {
-  day: string;
-  title: string;
-  details: string[];
-}
-
-interface FaqItem {
-  question: string;
-  answer: string;
-}
-
-interface Destination {
-  id?: number;
-  title: string;
-  slug?: string;
-  imageSrc: string;
-  duration: string;
-  activityLevel: string;
-  activityType: string[];
-  groupSize: string;
-  description: string;
-  itinerary: ItineraryItem[];
-  includes: string[];
-  excludes: string[];
-  tips: string[];
-  faqs: FaqItem[];
-  gallery: string[];
-  price: number | string;
-  location: string;
-  isRecommended: boolean;
-  isSpecial: boolean;
-  type: 'nacional' | 'internacional' | 'special' | '';
-  createdAt?: string;
-  updatedAt?: string;
-}
+// Ya no necesitamos redefinir estas interfaces
 
 const AdminDestinationsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -66,15 +34,15 @@ const AdminDestinationsPage: React.FC = () => {
       });
 
       // Manejar la estructura anidada específica de la respuesta
-      console.log('Estructura de respuesta:', response.data);
-      
+      console.log("Estructura de respuesta:", response.data);
+
       // Navegación segura a través de los niveles anidados
       let destinationsArray: Destination[] = [];
-      
+
       if (response.data?.data?.data?.data) {
         // Estructura exacta del ejemplo proporcionado: success→data→success→data→data[]
         destinationsArray = response.data.data.data.data;
-        console.log('Meta información:', response.data.data.data.meta);
+        console.log("Meta información:", response.data.data.data.meta);
       } else if (response.data?.data?.data) {
         // Estructura alternativa: success→data→data[]
         destinationsArray = response.data.data.data;
@@ -86,8 +54,8 @@ const AdminDestinationsPage: React.FC = () => {
         destinationsArray = Array.isArray(response.data) ? response.data : [];
       }
 
-      console.log('Destinos extraídos:', destinationsArray.length);
-      
+      console.log("Destinos extraídos:", destinationsArray.length);
+
       // Ordenar por fecha de creación descendente (si existe createdAt)
       destinationsArray.sort((a: Destination, b: Destination) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -137,22 +105,93 @@ const AdminDestinationsPage: React.FC = () => {
   };
 
   // Editar un destino
-  const handleEditDestination = (destination: Destination) => {
-    setSelectedDestination(destination);
-    setShowForm(true);
+  const handleEditDestination = async (destination: Destination) => {
+    try {
+      // Siempre vamos a cargar los datos completos del destino desde el servidor
+      if (destination.id) {
+        setIsLoading(true);
+        const token = authService.getAuthToken();
+
+        // Obtener los detalles completos del destino usando el endpoint GET /destinations/:id
+        const response = await axios.get(
+          `${API_URL}/destinations/${destination.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        console.log("Respuesta del servidor para el destino:", response.data);
+
+        // Verificar que tenemos datos y extraer correctamente los datos anidados
+        if (response.data) {
+          // Navegamos a través de la estructura anidada para obtener los datos reales
+          let destinoCompleto;
+
+          // Caso 1: Respuesta en response.data.data.data
+          if (response.data.data && response.data.data.data) {
+            destinoCompleto = response.data.data.data;
+          }
+          // Caso 2: Respuesta en response.data.data
+          else if (response.data.data) {
+            destinoCompleto = response.data.data;
+          }
+          // Caso 3: Respuesta directa en response.data
+          else {
+            destinoCompleto = response.data;
+          }
+
+          // Aseguramos que destinoCompleto tenga los campos necesarios
+          if (typeof destinoCompleto === "object" && destinoCompleto) {
+            // Preservar el ID original
+            if (!destinoCompleto.id) {
+              destinoCompleto.id = destination.id;
+            }
+
+            // Asegurar que todos los arrays existan para evitar errores posteriores
+            destinoCompleto.itinerary = destinoCompleto.itinerary || [];
+            destinoCompleto.includes = destinoCompleto.includes || [];
+            destinoCompleto.excludes = destinoCompleto.excludes || [];
+            destinoCompleto.tips = destinoCompleto.tips || [];
+            destinoCompleto.faqs = destinoCompleto.faqs || [];
+            destinoCompleto.gallery = destinoCompleto.gallery || [];
+            destinoCompleto.activityType = destinoCompleto.activityType || [];
+
+            // Actualizar estado y mostrar formulario
+            toast.success("Datos del destino cargados");
+            setSelectedDestination(destinoCompleto);
+            setShowForm(true);
+          } else {
+            throw new Error("La estructura de datos recibida no es válida");
+          }
+        } else {
+          throw new Error("No se recibieron datos del destino");
+        }
+      } else {
+        throw new Error("El destino no tiene un ID válido");
+      }
+    } catch (error) {
+      console.error("Error al cargar los detalles del destino:", error);
+      toast.error("No se pudieron cargar los detalles del destino");
+
+      // En caso de error, intentar editar con los datos mínimos que tenemos
+      setSelectedDestination(destination);
+      setShowForm(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Helper para formatear moneda (Pesos Chilenos)
   const formatPrice = (price: number | string) => {
     // Asegurarse de que price sea un número
-    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
-    
-    if (isNaN(numericPrice)) return 'Precio no disponible';
-    
+    const numericPrice = typeof price === "string" ? parseFloat(price) : price;
+
+    if (isNaN(numericPrice)) return "Precio no disponible";
+
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
       currency: "CLP",
-      maximumFractionDigits: 0 // Sin decimales para pesos chilenos
+      maximumFractionDigits: 0, // Sin decimales para pesos chilenos
     }).format(numericPrice);
   };
 
@@ -333,7 +372,9 @@ const AdminDestinationsPage: React.FC = () => {
                         <span className="font-medium text-gray-800">
                           Creado:
                         </span>{" "}
-                        {dest.createdAt ? formatDate(dest.createdAt) : 'Fecha desconocida'}
+                        {dest.createdAt
+                          ? formatDate(dest.createdAt)
+                          : "Fecha desconocida"}
                       </div>
                     </div>
 
@@ -346,7 +387,10 @@ const AdminDestinationsPage: React.FC = () => {
                         Editar
                       </button>
                       <button
-                        onClick={() => dest.id !== undefined && handleDeleteDestination(dest.id)}
+                        onClick={() =>
+                          dest.id !== undefined &&
+                          handleDeleteDestination(dest.id)
+                        }
                         disabled={dest.id === undefined}
                         className="font-medium text-red-600 hover:text-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
