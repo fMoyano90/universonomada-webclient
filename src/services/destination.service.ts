@@ -9,7 +9,13 @@ interface DestinationResponse {
   title: string;
   slug: string;
   imageSrc: string;
-  // Otros campos del destino...
+  type: string;
+  description: string;
+  isRecommended?: boolean;
+  isSpecial?: boolean;
+  galleryImages?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 class DestinationService {
@@ -72,6 +78,25 @@ class DestinationService {
       });
       
       console.log('Respuesta del servidor:', response.data);
+      return response.data;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene los últimos destinos agregados
+   * @param limit Número de destinos a obtener (por defecto 6)
+   * @returns Promesa con los destinos más recientes
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getLatestDestinations(limit = 6): Promise<any> {
+    try {
+      const response = await axios.get(`${API_URL}/destinations/latest`, {
+        params: { limit }
+      });
+      
       return response.data;
     } catch (error) {
       this.handleError(error);
