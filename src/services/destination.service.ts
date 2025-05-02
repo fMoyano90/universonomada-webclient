@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import authService from './auth.service';
 
@@ -96,6 +97,22 @@ class DestinationService {
       const response = await axios.get(`${API_URL}/destinations/latest`, {
         params: { limit }
       });
+      
+      return response.data;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el último destino marcado como especial/destacado
+   * @returns Promesa con el destino destacado
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getLatestSpecialDestination(): Promise<any> {
+    try {
+      const response = await axios.get(`${API_URL}/destinations/special/latest`);
       
       return response.data;
     } catch (error) {
