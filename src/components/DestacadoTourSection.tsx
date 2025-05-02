@@ -28,12 +28,9 @@ const DestacadoTourSection = () => {
         setError(null);
         const response = await destinationService.getLatestSpecialDestination();
         
-        console.log('Respuesta completa del destino destacado:', response);
-        
         // Verificar la estructura anidada de la respuesta (success.data.data)
         if (response?.success && response?.data?.success && response?.data?.data) {
           const destinationData = response.data.data;
-          console.log('Datos del destino destacado:', destinationData);
           
           // Ahora accedemos a los datos correctamente
           setFeaturedDestination(destinationData);
@@ -143,7 +140,7 @@ const DestacadoTourSection = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            <div className="bg-[#faf5e4] py-1 px-4 rounded-full text-sm font-semibold text-primary-blue inline-block mb-4">
+            <div className="bg-primary-orange-dark py-1 px-4 rounded-full text-sm font-semibold text-white inline-block mb-4">
               Destacado
             </div>
             

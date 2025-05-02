@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 // Interfaz para los testimonios
 interface Testimonial {
@@ -11,6 +12,9 @@ interface Testimonial {
 }
 
 const TestimonialsSection = () => {
+  // Estado para el carrusel
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
   // Datos de testimonios
   const testimonials: Testimonial[] = [
     {
@@ -79,6 +83,39 @@ const TestimonialsSection = () => {
     }
   ];
 
+  // Calcular número máximo de páginas
+  const maxSlides = Math.ceil(testimonials.length / 3);
+
+  // Auto-avance del carrusel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => 
+        prevIndex === maxSlides - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [maxSlides]);
+
+  // Navegar a testimonio anterior
+  const prevSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? maxSlides - 1 : prevIndex - 1
+    );
+  };
+
+  // Navegar a testimonio siguiente
+  const nextSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === maxSlides - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  // Navegar a un testimonio específico
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index);
+  };
+
   // Renderizar estrellas de calificación
   const renderStars = (rating: number) => {
     const stars = [];
@@ -114,60 +151,91 @@ const TestimonialsSection = () => {
               {renderStars(5)}
               <span className="ml-2 text-gray-700 font-medium">48 Reseñas</span>
             </div>
-            
-            <div className="ml-6">
-              <button 
-                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors"
-                aria-label="Filtrar reseñas"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-              </button>
-            </div>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {testimonials.slice(0, 6).map((testimonial, index) => (
-            <motion.div
-              key={testimonial.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 * index }}
-              viewport={{ once: true }}
-              className="bg-white rounded-xl overflow-hidden shadow-md"
-            >
-              {testimonial.images && testimonial.images.length > 0 && (
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={testimonial.images[0]} 
-                    alt={`Foto de viaje de ${testimonial.name}`}
-                    className="w-full h-full object-cover"
-                  />
-                  {testimonial.images.length > 1 && (
-                    <span className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                      +{testimonial.images.length - 1}
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              <div className="p-5">
-                <h3 className="font-semibold text-gray-900">{testimonial.name}</h3>
-                <div className="flex my-1">
-                  {renderStars(testimonial.rating)}
-                </div>
-                <p className="text-gray-700 text-sm mt-2 line-clamp-4">{testimonial.text}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-        
-        <div className="flex justify-center mt-10">
-          <button className="px-6 py-3 bg-primary-orange text-white rounded-lg hover:bg-primary-orange-dark transition-colors">
-            Ver todas las reseñas
+        {/* Carrusel de testimonios con espacio adicional para las flechas */}
+        <div className="relative mx-10">
+          {/* Botones de navegación colocados fuera del contenedor principal */}
+          <button 
+            onClick={prevSlide} 
+            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md z-20 -ml-6 hover:bg-gray-100"
+            aria-label="Testimonio anterior"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
+          
+          <button 
+            onClick={nextSlide} 
+            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md z-20 -mr-6 hover:bg-gray-100"
+            aria-label="Testimonio siguiente"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <div className="overflow-hidden">
+            <motion.div 
+              className="flex transition-transform duration-500"
+              animate={{ x: `-${currentIndex * 100}%` }}
+              transition={{ ease: "easeInOut", duration: 0.5 }}
+            >
+              {/* Agrupar testimonios en slides de 3 para pantallas grandes */}
+              {Array.from({ length: maxSlides }).map((_, slideIndex) => (
+                <div key={slideIndex} className="w-full min-w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-2 box-border py-4">
+                  {testimonials.slice(slideIndex * 3, slideIndex * 3 + 3).map((testimonial) => (
+                    <div key={testimonial.id} className="flex justify-center pb-8">
+                      <motion.div 
+                        className="bg-white rounded-xl overflow-hidden shadow-lg w-full max-w-sm transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        viewport={{ once: true }}
+                      >
+                        {testimonial.images && testimonial.images.length > 0 && (
+                          <div className="relative h-48 overflow-hidden">
+                            <img 
+                              src={testimonial.images[0]} 
+                              alt={`Foto de viaje de ${testimonial.name}`}
+                              className="w-full h-full object-cover"
+                            />
+                            {testimonial.images.length > 1 && (
+                              <span className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                +{testimonial.images.length - 1}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="p-5">
+                          <h3 className="font-semibold text-gray-900">{testimonial.name}</h3>
+                          <div className="flex my-1">
+                            {renderStars(testimonial.rating)}
+                          </div>
+                          <p className="text-gray-700 text-sm mt-2 line-clamp-5">{testimonial.text}</p>
+                        </div>
+                      </motion.div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Indicadores de navegación */}
+          <div className="flex justify-center mt-8">
+            {Array.from({ length: maxSlides }).map((_, index) => (
+              <button 
+                key={index} 
+                onClick={() => goToSlide(index)}
+                className={`h-2 w-2 mx-1 rounded-full ${currentIndex === index ? 'bg-primary-orange' : 'bg-gray-300'}`}
+                aria-label={`Ir al grupo de testimonios ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
