@@ -437,7 +437,7 @@ const DestinationDetailPage = () => {
             <div className="block lg:hidden bg-white p-6 rounded-xl shadow-sm mt-6">
               <div className="flex flex-col space-y-3">
                 <a 
-                  href="https://wa.me/56912345678" 
+                  href="https://api.whatsapp.com/send?phone=56974636396" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-[#25D366] text-white py-3 px-6 rounded-lg font-medium hover:bg-opacity-90 transition-colors justify-center"
