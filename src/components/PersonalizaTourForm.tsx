@@ -126,7 +126,7 @@ const PersonalizaTourForm = () => {
           viewport={{ once: true }}
           className="bg-white rounded-2xl shadow-xl p-8 mx-auto max-w-5xl"
         >
-          <div className="bg-primary-orange text-white rounded-lg py-3 px-6 inline-block mb-8">
+          <div className="bg-primary-orange-dark text-white rounded-lg py-3 px-6 inline-block mb-8">
             <h3 className="font-bold text-lg">PERSONALIZA TU TOUR</h3>
           </div>
 

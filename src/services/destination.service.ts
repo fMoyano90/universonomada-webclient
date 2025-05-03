@@ -148,6 +148,53 @@ class DestinationService {
   }
 
   /**
+   * Obtiene un destino por su ID
+   * @param id ID del destino a obtener
+   * @returns Promesa con los datos del destino
+   */
+  async getDestinationById(id: number): Promise<any> {
+    try {
+      const response = await axios.get(`${API_URL}/destinations/${id}`);
+      // Manejar estructura anidada de respuesta
+      if (response.data && response.data.data && response.data.data.data) {
+        return response.data.data.data;
+      } else if (response.data && response.data.data) {
+        return response.data.data;
+      } else {
+        return response.data;
+      }
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene los destinos recomendados por tipo
+   * @param type Tipo de destino ('nacional' o 'internacional')
+   * @param limit Número máximo de destinos a obtener
+   * @returns Promesa con los destinos recomendados
+   */
+  async getRecommendedDestinations(type: string, limit = 3): Promise<any> {
+    try {
+      const response = await axios.get(`${API_URL}/destinations/recommended/${type}`);
+      // Manejar estructura anidada de respuesta
+      let data;
+      if (response.data && response.data.data && response.data.data.data) {
+        data = response.data.data.data;
+      } else if (response.data && response.data.data) {
+        data = response.data.data;
+      } else {
+        data = response.data;
+      }
+      return Array.isArray(data) ? data.slice(0, limit) : []; // Limitar el número de resultados
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
    * Maneja los errores de las peticiones
    * @param error Error capturado
    */

@@ -182,7 +182,7 @@ const ToursSection = () => {
                     )}
                   </div>
                   <Link 
-                    to={tour.slug ? `/destinos/${tour.slug}` : `/tours/${tour.id}`} 
+                    to={`/destinos/${tour.id}`} 
                     className="inline-block w-full text-center py-2 px-4 bg-white border border-primary-orange text-primary-orange rounded-lg font-medium hover:bg-primary-orange hover:text-white transition-colors duration-300 relative z-10"
                   >
                     Ver detalles

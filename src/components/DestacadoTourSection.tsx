@@ -166,7 +166,7 @@ const DestacadoTourSection = () => {
               whileTap={{ scale: 0.95 }}
             >
               <Link 
-                to={`/destinos/${featuredDestination.slug}`} 
+                to={`/destinos/${featuredDestination.id}`} 
                 className="inline-block py-3 px-8 bg-primary-orange hover:bg-primary-orange-dark text-white rounded-lg font-medium transition-colors shadow-md"
               >
                 Ver tour

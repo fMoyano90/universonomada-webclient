@@ -47,6 +47,7 @@ function App() {
         <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
         <Route path="/about" element={<MainLayout><AboutPage /></MainLayout>} />
         <Route path="/destino/:id" element={<MainLayout><DestinationDetailPage /></MainLayout>} />
+        <Route path="/destinos/:id" element={<MainLayout><DestinationDetailPage /></MainLayout>} />
         <Route path="/destinos-nacionales" element={<MainLayout><DestinacionalesPage /></MainLayout>} />
         <Route path="/destinos-internacionales" element={<MainLayout><InternacionalesPage /></MainLayout>} />
         <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />

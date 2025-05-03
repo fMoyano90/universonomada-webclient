@@ -170,7 +170,7 @@ const InternacionalesPage = () => {
                 whileHover={{ y: -5 }}
                 className="rounded-2xl overflow-hidden shadow-lg bg-white group relative"
               >
-                <Link to={`/destino/${destino.id}`} className="block relative">
+                <Link to={`/destinos/${destino.id}`} className="block relative">
                   <div className="relative h-60 overflow-hidden">
                     <img 
                       src={destino.imageSrc} 

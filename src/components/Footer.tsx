@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
-import logo from '../assets/logo-blanco.svg';
+// import logo from '../assets/logo-blanco.svg';
 import subscriptionService from '../services/subscription.service';
 
 const Footer = () => {
@@ -70,9 +70,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           {/* Logo y botones de contacto */}
           <div className="flex flex-col items-start">
-            <div className="mb-8">
+            {/* <div className="mb-8">
                 <img src={logo} alt="Universo Nómada" className="w-24 h-24" />
-            </div>
+            </div> */}
 
             <h3 className="text-primary-green-dark font-medium mb-4">Hablar con un ejecutivo</h3>
             
