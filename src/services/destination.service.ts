@@ -19,17 +19,6 @@ interface DestinationResponse {
   updatedAt?: string;
 }
 
-// Interfaz para respuesta paginada
-interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
 class DestinationService {
   private static instance: DestinationService;
   
