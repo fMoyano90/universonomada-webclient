@@ -30,6 +30,7 @@ const ToursRecomendados = () => {
         
         console.log('Datos de destinos recomendados:', data);
         
+        // La respuesta ya está procesada en el servicio para devolver el array de destinos
         if (Array.isArray(data) && data.length > 0) {
           setDestinos(data);
           setError(null);

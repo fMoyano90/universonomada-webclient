@@ -98,6 +98,34 @@ class DestinationService {
         params: { limit }
       });
       
+      console.log('getLatestDestinations - Respuesta completa:', response.data);
+      
+      // Caso 1: Estructura { success: true, data: { data: [...], meta: {...} } }
+      if (response.data?.success && response.data?.data?.data && Array.isArray(response.data.data.data)) {
+        console.log('getLatestDestinations - Usando estructura data.data.data');
+        return { success: true, data: response.data.data.data };
+      }
+      
+      // Caso 2: Estructura { success: true, data: [...] }
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        console.log('getLatestDestinations - Usando estructura data.data');
+        return { success: true, data: response.data.data };
+      }
+      
+      // Caso 3: Estructura { data: [...] }
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        console.log('getLatestDestinations - Usando estructura data');
+        return { success: true, data: response.data.data };
+      }
+      
+      // Caso 4: Respuesta es directamente un array
+      if (Array.isArray(response.data)) {
+        console.log('getLatestDestinations - Usando respuesta como array');
+        return { success: true, data: response.data };
+      }
+      
+      // Si no coincide con ninguna estructura conocida, devolver la respuesta completa
+      console.warn('getLatestDestinations - Estructura desconocida');
       return response.data;
     } catch (error) {
       this.handleError(error);
@@ -122,7 +150,6 @@ class DestinationService {
         params: { page, limit }
       });
       
-      // Devolvemos la respuesta completa y dejamos que el componente maneje la estructura
       return response.data;
     } catch (error) {
       console.error('Error completo al obtener destinos:', error);
@@ -140,6 +167,28 @@ class DestinationService {
     try {
       const response = await axios.get(`${API_URL}/destinations/special/latest`);
       
+      console.log('getLatestSpecialDestination - Respuesta completa:', response.data);
+      
+      // Caso 1: Estructura { success: true, data: { data: {...} } }
+      if (response.data?.success && response.data?.data?.data && typeof response.data.data.data === 'object') {
+        console.log('getLatestSpecialDestination - Usando estructura data.data.data');
+        return response.data.data.data;
+      }
+      
+      // Caso 2: Estructura { success: true, data: {...} }
+      if (response.data?.success && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+        console.log('getLatestSpecialDestination - Usando estructura data.data');
+        return response.data.data;
+      }
+      
+      // Caso 3: Estructura { data: {...} }
+      if (response.data?.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+        console.log('getLatestSpecialDestination - Usando estructura data');
+        return response.data.data;
+      }
+      
+      // Si no coincide con ninguna estructura conocida, devolver la respuesta completa
+      console.warn('getLatestSpecialDestination - Estructura desconocida');
       return response.data;
     } catch (error) {
       this.handleError(error);
@@ -156,9 +205,7 @@ class DestinationService {
     try {
       const response = await axios.get(`${API_URL}/destinations/${id}`);
       // Manejar estructura anidada de respuesta
-      if (response.data && response.data.data && response.data.data.data) {
-        return response.data.data.data;
-      } else if (response.data && response.data.data) {
+      if (response.data && response.data.success && response.data.data) {
         return response.data.data;
       } else {
         return response.data;
@@ -180,9 +227,7 @@ class DestinationService {
       const response = await axios.get(`${API_URL}/destinations/recommended/${type}`);
       // Manejar estructura anidada de respuesta
       let data;
-      if (response.data && response.data.data && response.data.data.data) {
-        data = response.data.data.data;
-      } else if (response.data && response.data.data) {
+      if (response.data && response.data.success && response.data.data) {
         data = response.data.data;
       } else {
         data = response.data;

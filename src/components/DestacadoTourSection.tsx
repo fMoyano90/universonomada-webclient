@@ -28,14 +28,29 @@ const DestacadoTourSection = () => {
         setError(null);
         const response = await destinationService.getLatestSpecialDestination();
         
-        // Verificar la estructura anidada de la respuesta (success.data.data)
-        if (response?.success && response?.data?.success && response?.data?.data) {
-          const destinationData = response.data.data;
-          
-          // Ahora accedemos a los datos correctamente
-          setFeaturedDestination(destinationData);
+        console.log('DestacadoTourSection - Respuesta completa:', response);
+        
+        // Detectar la estructura de la respuesta y extraer el destino destacado
+        let featuredData: FeaturedDestination | null = null;
+        
+        if (response && typeof response === 'object') {
+          // Si la respuesta es un objeto con propiedades que coinciden con FeaturedDestination
+          if (response.id && response.title && response.imageSrc) {
+            console.log('DestacadoTourSection - Usando respuesta directa');
+            featuredData = response as FeaturedDestination;
+          }
+          // Si la respuesta tiene una propiedad data que contiene el destino
+          else if (response.data && typeof response.data === 'object' && response.data.id) {
+            console.log('DestacadoTourSection - Usando response.data');
+            featuredData = response.data as FeaturedDestination;
+          }
+        }
+        
+        if (featuredData) {
+          console.log('DestacadoTourSection - Destino destacado encontrado:', featuredData);
+          setFeaturedDestination(featuredData);
         } else {
-          console.warn('Formato de respuesta no esperado:', response);
+          console.warn('DestacadoTourSection - No se encontró un destino destacado válido:', response);
           setError('No se encontró un destino destacado');
         }
       } catch (error) {

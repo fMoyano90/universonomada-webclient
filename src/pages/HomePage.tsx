@@ -3,7 +3,9 @@ import {
   DestacadosSection,
   BenefitsSection,
   TestimonialsSection,
-  AboutUsSection
+  AboutUsSection,
+  ToursSection,
+  DestacadoTourSection
 } from '../components';
 
 const HomePage = () => {
@@ -11,6 +13,8 @@ const HomePage = () => {
     <div className="min-h-screen">
       <HeroSlider />
       <DestacadosSection />
+      <ToursSection />
+      <DestacadoTourSection />
       <BenefitsSection />
       <TestimonialsSection />
       <AboutUsSection />

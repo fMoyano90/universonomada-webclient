@@ -49,8 +49,8 @@ const InternacionalesPage = () => {
         console.log('Respuesta API:', response);
         
         // Navegamos a través de la estructura de respuesta
-        const data = response?.data?.data?.data || [];
-        const meta = response?.data?.data?.meta || { total: 0, totalPages: 1, page: 1, limit: itemsPerPage };
+        const data = response?.data?.data || [];
+        const meta = response?.data?.meta || { total: 0, totalPages: 1, page: 1, limit: itemsPerPage };
         
         console.log('Datos procesados:', { data, meta });
         

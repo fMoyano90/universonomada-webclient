@@ -18,16 +18,9 @@ interface AuthData {
   user: User;
 }
 
-interface LoginResponseData {
-  success: boolean;
-  data: AuthData;
-  timestamp: string;
-  path: string;
-}
-
 interface LoginResponse {
   success: boolean;
-  data: LoginResponseData;
+  data: AuthData;
   timestamp: string;
   path: string;
 }
@@ -48,21 +41,21 @@ class AuthService {
     return AuthService.instance;
   }
 
-  async login(credentials: LoginCredentials): Promise<LoginResponseData> {
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
       const response = await axios.post<LoginResponse>(
         `${API_URL}/auth/login`,
         credentials
       );
       
-      const { accessToken, refreshToken, user } = response.data.data.data;
+      const { accessToken, refreshToken, user } = response.data.data;
       
       // Guardar tokens en localStorage
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       
-      return response.data.data;
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.data?.error?.message) {
@@ -107,7 +100,7 @@ class AuthService {
         { refreshToken }
       );
 
-      const { accessToken, refreshToken: newRefreshToken } = response.data.data.data;
+      const { accessToken, refreshToken: newRefreshToken } = response.data.data;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', newRefreshToken);
 

@@ -50,23 +50,13 @@ const AdminSubscriptionsPage: React.FC = () => {
       });
 
       // Manejar la estructura específica de la respuesta
-      if (response.data && response.data.success && response.data.data) {
-        const responseData = response.data.data;
+      if (response.data && response.data.success) {
+        const responseData = response.data;
+        const subscriptionData = responseData.data;
 
-        if (
-          responseData.success &&
-          responseData.data &&
-          responseData.data.data
-        ) {
-          // Estructura: { success: true, data: { success: true, data: { data: [...], meta: {...} } } }
-          const subscriptionData = responseData.data;
-
-          setSubscriptions(subscriptionData.data);
-          setTotalPages(subscriptionData.meta.totalPages);
-          setTotalItems(subscriptionData.meta.total);
-        } else {
-          throw new Error("Formato de datos inesperado");
-        }
+        setSubscriptions(subscriptionData.data);
+        setTotalPages(subscriptionData.meta.totalPages);
+        setTotalItems(subscriptionData.meta.total);
       } else {
         throw new Error("Respuesta sin datos o estructura incorrecta");
       }

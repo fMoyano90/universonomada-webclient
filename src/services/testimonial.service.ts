@@ -96,36 +96,18 @@ class TestimonialService {
 
       // Asegurarse de que la respuesta tenga la estructura esperada
       if (response.data && typeof response.data === 'object') {
-        // Manejar estructura anidada compleja
-        if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data.data)) {
+        // Estructura actual del API: { success: true, data: { data: [...], meta: {...} } }
+        if (response.data.success && response.data.data) {
+          const responseData = response.data.data;
           return {
-            data: response.data.data.data.data,
-            total: response.data.data.data.total || 0,
-            page: parseInt(response.data.data.data.page) || page,
-            limit: parseInt(response.data.data.data.limit) || limit,
-            totalPages: response.data.data.data.totalPages || 1,
+            data: Array.isArray(responseData.data) ? responseData.data : [],
+            total: responseData.meta?.total || 0,
+            page: parseInt(responseData.meta?.page) || page,
+            limit: parseInt(responseData.meta?.limit) || limit,
+            totalPages: responseData.meta?.totalPages || 1,
           };
         }
-        // Manejar estructura anidada: success -> data -> data
-        if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
-          return {
-            data: response.data.data.data,
-            total: response.data.data.total || 0,
-            page: parseInt(response.data.data.page) || page,
-            limit: parseInt(response.data.data.limit) || limit,
-            totalPages: response.data.data.totalPages || 1,
-          };
-        }
-        // Manejar estructura anidada: data -> data
-        if (response.data.data && Array.isArray(response.data.data.data)) {
-          return {
-            data: response.data.data.data,
-            total: response.data.data.total || 0,
-            page: parseInt(response.data.data.page) || page,
-            limit: parseInt(response.data.data.limit) || limit,
-            totalPages: response.data.data.totalPages || 1,
-          };
-        }
+        
         // Si la respuesta es un objeto pero no tiene la estructura esperada,
         // la convertimos para que cumpla con la interfaz PaginationResult
         return {
@@ -158,14 +140,9 @@ class TestimonialService {
         `${API_URL}/testimonials/latest?limit=${limit}`
       );
       
-      // Verificar estructura anidada compleja
-      if (response.data && response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
-        return response.data.data.data;
-      }
-      
-      // Verificar estructura anidada success -> data -> data
-      if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
-        return response.data.data.data;
+      // Estructura actual del API: { success: true, data: [...] }
+      if (response.data && response.data.success && response.data.data) {
+        return Array.isArray(response.data.data) ? response.data.data : [];
       }
       
       // Verificar que la respuesta sea un array

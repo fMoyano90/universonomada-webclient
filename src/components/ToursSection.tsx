@@ -45,32 +45,52 @@ const ToursSection = () => {
         setError(null);
         const response = await destinationService.getLatestDestinations(6);
         
-        console.log('Respuesta completa de la API:', response);
+        console.log('ToursSection - Respuesta completa:', response);
         
-        // Estructura doblemente anidada: response.data.data tiene los destinos
-        if (response?.success && response?.data?.success && Array.isArray(response.data.data)) {
-          console.log('Datos de destinos encontrados:', response.data.data);
-          
-          const transformedData: Tour[] = response.data.data.map((dest: Destination) => ({
-            id: dest.id,
-            imageSrc: dest.imageSrc,
-            title: dest.title,
-            type: dest.type,
-            price: dest.price ? parseFloat(dest.price) : undefined,
-            currency: 'CLP',
-            onSale: dest.isSpecial,
-            slug: dest.slug,
-            duration: dest.duration,
-            location: dest.location
-          }));
-          
-          console.log('Datos transformados:', transformedData);
-          setTours(transformedData);
+        // Extraer los datos sin importar la estructura de la respuesta
+        let destinationsData: Destination[] = [];
+        
+        if (response?.success && Array.isArray(response?.data)) {
+          // Caso: { success: true, data: [...] }
+          destinationsData = response.data;
+        } else if (Array.isArray(response)) {
+          // Caso: La respuesta es directamente el array
+          destinationsData = response;
+        } else if (response?.data && Array.isArray(response.data)) {
+          // Caso: { data: [...] }
+          destinationsData = response.data;
         } else {
           console.warn('Formato de respuesta no esperado:', response);
           setError('No se pudieron procesar los datos de destinos correctamente.');
           setTours([]);
+          setLoading(false);
+          return;
         }
+        
+        console.log('Datos de destinos encontrados:', destinationsData);
+        
+        if (destinationsData.length === 0) {
+          setTours([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Transformar los datos
+        const transformedData: Tour[] = destinationsData.map((dest: Destination) => ({
+          id: dest.id,
+          imageSrc: dest.imageSrc,
+          title: dest.title,
+          type: dest.type,
+          price: dest.price ? parseFloat(dest.price.toString()) : undefined,
+          currency: 'CLP',
+          onSale: dest.isSpecial,
+          slug: dest.slug,
+          duration: dest.duration,
+          location: dest.location
+        }));
+        
+        console.log('Datos transformados:', transformedData);
+        setTours(transformedData);
       } catch (error) {
         console.error('Error al obtener los destinos:', error);
         setError('No se pudieron cargar los destinos. Por favor, intente nuevamente más tarde.');
