@@ -5,7 +5,8 @@ import {
   TestimonialsSection,
   AboutUsSection,
   ToursSection,
-  DestacadoTourSection
+  DestacadoTourSection,
+  PersonalizaTourForm
 } from '../components';
 
 const HomePage = () => {
@@ -15,6 +16,7 @@ const HomePage = () => {
       <DestacadosSection />
       <ToursSection />
       <DestacadoTourSection />
+      <PersonalizaTourForm />
       <BenefitsSection />
       <TestimonialsSection />
       <AboutUsSection />
