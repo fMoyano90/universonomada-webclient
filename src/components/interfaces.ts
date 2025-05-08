@@ -62,4 +62,24 @@ export interface Destination {
   data?: BackendData;
   itineraryItems?: BackendItineraryItem[];
   galleryImages?: BackendGalleryImage[];
+}
+
+// Interfaz para los testimonios
+export interface Testimonial {
+  id?: number;
+  name: string;
+  rating: number;
+  testimonial_text: string;
+  image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Interfaz para la paginación
+export interface PaginationResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 } 

@@ -1,93 +1,39 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-
-// Interfaz para los testimonios
-interface Testimonial {
-  id: number;
-  name: string;
-  image: string;
-  rating: number;
-  text: string;
-  images?: string[];
-}
+import { Testimonial } from './interfaces';
+import testimonialService from '../services/testimonial.service';
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 const TestimonialsSection = () => {
-  // Estado para el carrusel
+  // Estado para el carrusel y los datos
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Datos de testimonios
-  const testimonials: Testimonial[] = [
-    {
-      id: 1,
-      name: "Marcelo P.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Excelente viaje los paisajes son sacados de una postal nuestro guía Raimundo y el chófer don Pablo hicieron que el viaje fuera 10 de 5 estrellas!!! Recomendado",
-      images: ["/images/testimonials/sunset.jpg"]
-    },
-    {
-      id: 2,
-      name: "Pamela",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Un muy buen tour a Campos de Hielo Sur con geoterra a cargo Raimundo González como guía y acompañado de don Pablo como chófer. Todo muy bien gestionando y coordinado. Se agradece la amabilidad, preocupación y dedicación de Raimundo con todo el grupo del 'Rompe huesos'.",
-      images: ["/images/testimonials/waterfall-group.jpg"]
-    },
-    {
-      id: 3,
-      name: "Maria H.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Excelente experiencia un viaje espectacular, buen tiempo lugares maravillosos y todo esto complementado con el impecable desempeño de Max Sue Wong nuestra brillante guía, su simpatía, conocimientos, preocupación de todos y cada uno de los pasajeros, en resumen un siete",
-      images: ["/images/testimonials/mountains.jpg"]
-    },
-    {
-      id: 4,
-      name: "Yasna M.",
-      image: "/placeholder-avatar.jpg", 
-      rating: 5,
-      text: "Regresando de nuestro 3er viaje con GeoTerra esta vez acompañada de Mix-Sue una guía maravillosa, siempre dispuesta a responder todas las inquietudes y dudas pendiente de cada detalle para disfrutar el viaje hasta el último momento, espero en la próxima aventura encontrarme con ella",
-      images: ["/images/testimonials/lake-group.jpg"]
-    },
-    {
-      id: 5,
-      name: "Karia V.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "muy hermoso todo los lugares que hemos visitamos volveré sin duda de dudas!!",
-      images: ["/images/testimonials/lake.jpg"]
-    },
-    {
-      id: 6,
-      name: "Victor A.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Todo el viaje fue maravilloso, y de la Guía nada malo que decir, un 7 ella, como Guía, persona, amiga, 100% recomiendo este a cualquier otro viaje con Mix-Sue... GRACIAS TOTALES !!!",
-      images: ["/images/testimonials/boat-group.jpg"] 
-    },
-    {
-      id: 7,
-      name: "Patricio E.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "El viaje a Patagonia Norte fue maravilloso y muy entretenido, para venir en pareja es recomendable, se disfruta mucho de los paisajes de esta zona junto al guía Dante que es una enciclopedia andante!!!, junto a su pareja Patricio, los dos hacen un equipo espectacular!!!",
-      images: ["/images/testimonials/couple-boat.jpg"]
-    },
-    {
-      id: 8,
-      name: "Catalina B.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Excelente servicio y atención personalizada. Los guías son muy profesionales.",
-      images: ["/images/testimonials/pillars.jpg"]
-    }
-  ];
+  // Carga de datos
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoading(true);
+        const data = await testimonialService.getLatestTestimonials(8);
+        setTestimonials(data);
+      } catch (error) {
+        console.error('Error al cargar los testimonios:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTestimonials();
+  }, []);
 
   // Calcular número máximo de páginas
   const maxSlides = Math.ceil(testimonials.length / 3);
 
   // Auto-avance del carrusel
   useEffect(() => {
+    if (maxSlides <= 1) return;
+    
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => 
         prevIndex === maxSlides - 1 ? 0 : prevIndex + 1
@@ -122,12 +68,32 @@ const TestimonialsSection = () => {
     for (let i = 0; i < 5; i++) {
       stars.push(
         <span key={i} className="text-primary-orange">
-          {i < rating ? '★' : '☆'}
+          {i < rating ? <FaStar /> : <FaRegStar />}
         </span>
       );
     }
     return stars;
   };
+
+  // Componente de carga
+  if (loading) {
+    return (
+      <section className="py-20 px-4 bg-white relative">
+        <div className="container mx-auto max-w-6xl relative z-10 text-center">
+          <h2 className="text-4xl font-bold mb-3 text-gray-900">Nuestros Viajeros</h2>
+          <div className="w-20 h-1 bg-primary-orange mx-auto rounded-full mb-6"></div>
+          <div className="flex justify-center my-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-orange"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Si no hay testimonios, no mostrar la sección
+  if (testimonials.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-20 px-4 bg-white relative">
@@ -149,7 +115,7 @@ const TestimonialsSection = () => {
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center">
               {renderStars(5)}
-              <span className="ml-2 text-gray-700 font-medium">48 Reseñas</span>
+              <span className="ml-2 text-gray-700 font-medium">{testimonials.length} Reseñas</span>
             </div>
           </div>
         </motion.div>
@@ -157,25 +123,29 @@ const TestimonialsSection = () => {
         {/* Carrusel de testimonios con espacio adicional para las flechas */}
         <div className="relative mx-10">
           {/* Botones de navegación colocados fuera del contenedor principal */}
-          <button 
-            onClick={prevSlide} 
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md z-20 -ml-6 hover:bg-gray-100"
-            aria-label="Testimonio anterior"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          
-          <button 
-            onClick={nextSlide} 
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md z-20 -mr-6 hover:bg-gray-100"
-            aria-label="Testimonio siguiente"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          {maxSlides > 1 && (
+            <>
+              <button 
+                onClick={prevSlide} 
+                className="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md z-20 -ml-6 hover:bg-gray-100"
+                aria-label="Testimonio anterior"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <button 
+                onClick={nextSlide} 
+                className="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md z-20 -mr-6 hover:bg-gray-100"
+                aria-label="Testimonio siguiente"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
 
           <div className="overflow-hidden">
             <motion.div 
@@ -195,18 +165,13 @@ const TestimonialsSection = () => {
                         transition={{ duration: 0.5 }}
                         viewport={{ once: true }}
                       >
-                        {testimonial.images && testimonial.images.length > 0 && (
+                        {testimonial.image_url && (
                           <div className="relative h-48 overflow-hidden">
                             <img 
-                              src={testimonial.images[0]} 
+                              src={testimonial.image_url} 
                               alt={`Foto de viaje de ${testimonial.name}`}
                               className="w-full h-full object-cover"
                             />
-                            {testimonial.images.length > 1 && (
-                              <span className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                                +{testimonial.images.length - 1}
-                              </span>
-                            )}
                           </div>
                         )}
                         
@@ -215,7 +180,7 @@ const TestimonialsSection = () => {
                           <div className="flex my-1">
                             {renderStars(testimonial.rating)}
                           </div>
-                          <p className="text-gray-700 text-sm mt-2 line-clamp-5">{testimonial.text}</p>
+                          <p className="text-gray-700 text-sm mt-2 line-clamp-5">{testimonial.testimonial_text}</p>
                         </div>
                       </motion.div>
                     </div>
@@ -226,16 +191,18 @@ const TestimonialsSection = () => {
           </div>
 
           {/* Indicadores de navegación */}
-          <div className="flex justify-center mt-8">
-            {Array.from({ length: maxSlides }).map((_, index) => (
-              <button 
-                key={index} 
-                onClick={() => goToSlide(index)}
-                className={`h-2 w-2 mx-1 rounded-full ${currentIndex === index ? 'bg-primary-orange' : 'bg-gray-300'}`}
-                aria-label={`Ir al grupo de testimonios ${index + 1}`}
-              />
-            ))}
-          </div>
+          {maxSlides > 1 && (
+            <div className="flex justify-center mt-8">
+              {Array.from({ length: maxSlides }).map((_, index) => (
+                <button 
+                  key={index} 
+                  onClick={() => goToSlide(index)}
+                  className={`h-2 w-2 mx-1 rounded-full ${currentIndex === index ? 'bg-primary-orange' : 'bg-gray-300'}`}
+                  aria-label={`Ir al grupo de testimonios ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

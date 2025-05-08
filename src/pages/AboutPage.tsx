@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import imagenEquipo from '../assets/images/nosotros-2.jpg';
 
-export const AboutPage = () => {
+const AboutPage = () => {
   return (
     <div className="min-h-screen pt-48 pb-20 bg-primary-green-light/5">
       <main className="container mx-auto p-4 max-w-6xl">

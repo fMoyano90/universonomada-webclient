@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export const NotFoundPage = () => {
+const NotFoundPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-4 flex flex-col items-center justify-center py-32">
@@ -18,3 +18,5 @@ export const NotFoundPage = () => {
     </div>
   )
 }
+
+export default NotFoundPage;

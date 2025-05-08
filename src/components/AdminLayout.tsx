@@ -111,7 +111,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isSidebarOpen }) => {
 }
 
 // Main Admin Layout Component
-const AdminLayout: React.FC = () => {
+interface AdminLayoutProps {
+  children?: React.ReactNode;
+}
+
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
@@ -124,7 +128,7 @@ const AdminLayout: React.FC = () => {
       <div className="flex flex-1 overflow-hidden"> {/* Added overflow-hidden */}
         <AdminSidebar isSidebarOpen={isSidebarOpen} />
         <main className="flex-1 p-6 overflow-y-auto"> {/* Added overflow-y-auto */}
-          <Outlet /> {/* Child routes will render here */}
+          {children ? children : <Outlet />} {/* Use children if provided, otherwise use Outlet */}
         </main>
       </div>
     </div>

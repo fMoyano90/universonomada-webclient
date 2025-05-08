@@ -1,223 +1,572 @@
-import React, { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import testimonialService from '../services/testimonial.service';
+import { Testimonial } from '../components/interfaces';
+import { FaEdit, FaTrash, FaPlus, FaStar, FaStarHalfAlt, FaRegStar, FaUpload, FaImage } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
-interface Testimonial {
-  id: number;
-  name: string;
-  image: string;
-  rating: number;
-  text: string;
-  images?: string[];
-  createdAt: string;
-  isApproved: boolean;
+// Extender la interfaz Testimonial para incluir el campo _imageFile
+interface TestimonialFormData extends Testimonial {
+  _imageFile?: File;
 }
 
-const AdminTestimonialsPage: React.FC = () => {
-  const [showForm, setShowForm] = useState(false);
-  const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
+const AdminTestimonialsPage = () => {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTestimonial, setCurrentTestimonial] = useState<Testimonial | null>(null);
+  const [formData, setFormData] = useState<TestimonialFormData>({
+    name: '',
+    rating: 5,
+    testimonial_text: '',
+    image_url: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Datos de ejemplo - se reemplazarán con datos reales del backend
-  const testimonials: Testimonial[] = [
-    {
-      id: 1,
-      name: "Marcelo P.",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Excelente viaje los paisajes son sacados de una postal nuestro guía Raimundo y el chófer don Pablo hicieron que el viaje fuera 10 de 5 estrellas!!! Recomendado",
-      images: ["/images/testimonials/sunset.jpg"],
-      createdAt: "2024-04-15",
-      isApproved: true
-    },
-    {
-      id: 2,
-      name: "Pamela",
-      image: "/placeholder-avatar.jpg",
-      rating: 5,
-      text: "Un muy buen tour a Campos de Hielo Sur con geoterra a cargo Raimundo González como guía y acompañado de don Pablo como chófer. Todo muy bien gestionando y coordinado.",
-      images: ["/images/testimonials/waterfall-group.jpg"],
-      createdAt: "2024-04-10",
-      isApproved: true
-    },
-    {
-      id: 3,
-      name: "Maria H.",
-      image: "/placeholder-avatar.jpg",
-      rating: 4,
-      text: "Excelente experiencia un viaje espectacular, buen tiempo lugares maravillosos y todo esto complementado con el impecable desempeño de Max Sue Wong nuestra brillante guía.",
-      images: ["/images/testimonials/mountains.jpg"],
-      createdAt: "2024-04-05",
-      isApproved: false
-    },
-  ];
+  const fetchTestimonials = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await testimonialService.getAllTestimonials(page, 10);
+      
+      // Verificar que response.data es un array
+      if (Array.isArray(response.data)) {
+        setTestimonials(response.data);
+        setTotalPages(response.totalPages || 1);
+        setCurrentPage(response.page || 1);
+      } else {
+        // Si no es un array, establecer un array vacío
+        console.error('La respuesta de la API no contiene un array:', response);
+        setTestimonials([]);
+        setError('La respuesta del servidor no tiene el formato esperado');
+        toast.error('Error en el formato de datos del servidor');
+      }
+    } catch (error) {
+      console.error('Error fetching testimonials:', error);
+      setTestimonials([]);
+      setError('Error al cargar los testimonios. Inténtelo de nuevo más tarde.');
+      toast.error('Error al cargar los testimonios');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Renderizar estrellas de calificación
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchTestimonials(page);
+  };
+
+  const openCreateModal = () => {
+    setCurrentTestimonial(null);
+    setFormData({
+      name: '',
+      rating: 5,
+      testimonial_text: '',
+      image_url: '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (testimonial: Testimonial) => {
+    setCurrentTestimonial(testimonial);
+    setFormData({
+      name: testimonial.name,
+      rating: testimonial.rating,
+      testimonial_text: testimonial.testimonial_text,
+      image_url: testimonial.image_url || '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    // Resetear el input de archivo
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleRatingChange = (newRating: number) => {
+    setFormData({ ...formData, rating: newRating });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar el tipo de archivo
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validImageTypes.includes(file.type)) {
+      toast.error('El archivo debe ser una imagen (JPEG, PNG, GIF, WEBP)');
+      return;
+    }
+
+    // Validar el tamaño del archivo (5MB máximo)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('La imagen no debe superar los 5MB');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // Generar una vista previa en base64 para mostrar temporalmente
+      const imagePreview = await testimonialService.previewImageAsBase64(file, (percent) => {
+        setUploadProgress(percent);
+      });
+      
+      // Almacenar la imagen temporalmente como base64 para la vista previa
+      setFormData(prev => ({
+        ...prev,
+        image_url: imagePreview,
+        // Guardamos el archivo de imagen para enviarlo cuando se envíe el formulario
+        _imageFile: file
+      }));
+
+      toast.success('Imagen preparada para subir');
+    } catch (error) {
+      console.error('Error al preparar la imagen:', error);
+      toast.error('Error al preparar la imagen. Inténtelo de nuevo.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.testimonial_text) {
+      toast.error('Por favor complete los campos requeridos');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      // Extraer el archivo de imagen si existe
+      const imageFile = formData._imageFile;
+      
+      // Crear una copia limpia de los datos sin el archivo
+      const cleanFormData: Testimonial = {
+        name: formData.name,
+        rating: formData.rating,
+        testimonial_text: formData.testimonial_text,
+        image_url: formData.image_url && !formData.image_url.startsWith('data:') ? formData.image_url : '', // Ignorar imágenes base64
+      };
+      
+      if (currentTestimonial) {
+        // Actualizar testimonio existente usando el método que acepta un archivo de imagen
+        await testimonialService.updateTestimonial(currentTestimonial.id!, cleanFormData, imageFile);
+        toast.success('Testimonio actualizado correctamente');
+      } else {
+        // Crear nuevo testimonio usando el método que acepta un archivo de imagen
+        await testimonialService.createTestimonial(cleanFormData, imageFile);
+        toast.success('Testimonio creado correctamente');
+      }
+      
+      closeModal();
+      fetchTestimonials(currentPage);
+    } catch (error) {
+      console.error('Error saving testimonial:', error);
+      setError('Error al guardar el testimonio. Inténtelo de nuevo más tarde.');
+      toast.error('Error al guardar el testimonio');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Está seguro de que desea eliminar este testimonio?')) {
+      try {
+        setError(null);
+        await testimonialService.deleteTestimonial(id);
+        toast.success('Testimonio eliminado correctamente');
+        fetchTestimonials(currentPage);
+      } catch (error) {
+        console.error('Error deleting testimonial:', error);
+        setError('Error al eliminar el testimonio. Inténtelo de nuevo más tarde.');
+        toast.error('Error al eliminar el testimonio');
+      }
+    }
+  };
+
   const renderStars = (rating: number) => {
     const stars = [];
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <span key={i} className={`text-lg ${i < rating ? 'text-yellow-500' : 'text-gray-300'}`}>
-          ★
-        </span>
-      );
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<FaStar key={i} className="text-yellow-500" />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<FaStarHalfAlt key={i} className="text-yellow-500" />);
+      } else {
+        stars.push(<FaRegStar key={i} className="text-yellow-500" />);
+      }
     }
-    return stars;
-  };
 
-  // Helper para formatear fechas
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('es-CL', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
-  const handleEdit = (testimonial: Testimonial) => {
-    setEditingTestimonial(testimonial);
-    setShowForm(true);
-  };
-
-  const handleDelete = (id: number) => {
-    // Implementar lógica para eliminar testimonios
-    console.log(`Eliminar testimonio ${id}`);
-    // Después actualizaría la lista de testimonios
-  };
-
-  const handleApprove = (id: number, currentStatus: boolean) => {
-    // Implementar lógica para aprobar/desaprobar testimonios
-    console.log(`Cambiar estado de aprobación del testimonio ${id} a ${!currentStatus}`);
-    // Después actualizaría la lista de testimonios
+    return <div className="flex">{stars}</div>;
   };
 
   return (
-    <div>
-      {showForm ? (
-        // Formulario para crear/editar testimonios
-        <>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">
-              {editingTestimonial ? 'Editar Testimonio' : 'Añadir Nuevo Testimonio'}
-            </h2>
-            <button 
-              onClick={() => {
-                setShowForm(false);
-                setEditingTestimonial(null);
-              }}
-              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-blue focus:ring-offset-2 transition-colors"
-            >
-              Volver a la Lista
-            </button>
-          </div>
-          
-          {/* Aquí iría el formulario para testimonios */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-            <p className="text-gray-600 mb-4">Formulario para crear/editar testimonios (a implementar)</p>
-          </div>
-        </>
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Administrar Testimonios</h1>
+        <button
+          onClick={openCreateModal}
+          className="bg-primary-orange hover:bg-orange-600 text-white py-2 px-4 rounded-lg flex items-center gap-2"
+        >
+          <FaPlus /> Nuevo Testimonio
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-orange mx-auto"></div>
+          <p className="mt-3 text-gray-600">Cargando testimonios...</p>
+        </div>
       ) : (
-        // Lista de testimonios
         <>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">Gestionar Testimonios</h2>
-            <button 
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-blue-dark focus:outline-none focus:ring-2 focus:ring-primary-blue focus:ring-offset-2 transition-colors"
-            >
-              + Añadir Nuevo Testimonio
-            </button>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Calificación
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Testimonio
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Imagen
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {testimonials.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                      No hay testimonios disponibles
+                    </td>
+                  </tr>
+                ) : (
+                  // Asegurarnos de que testimonials es un array antes de usar map
+                  Array.isArray(testimonials) && testimonials.map((testimonial) => (
+                    <tr key={testimonial.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{testimonial.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {renderStars(testimonial.rating)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 line-clamp-2">{testimonial.testimonial_text}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {testimonial.image_url ? (
+                          <img
+                            src={testimonial.image_url}
+                            alt="Imagen del viaje"
+                            className="h-10 w-16 object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Error';
+                            }}
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-500">Sin imagen</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openEditModal(testimonial)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Editar"
+                          >
+                            <FaEdit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(testimonial.id!)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Eliminar"
+                          >
+                            <FaTrash size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
 
-          <p className="text-gray-600 mb-4">Aquí puedes ver, aprobar, editar y eliminar los testimonios de clientes.</p>
-          
-          {/* Lista de testimonios */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <ul role="list" className="divide-y divide-gray-200">
-              {testimonials.map((testimonial) => (
-                <li key={testimonial.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
-                  {/* Encabezado del testimonio */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      {testimonial.image && (
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-100">
-                          <img 
-                            src={testimonial.image} 
-                            alt={testimonial.name} 
-                            className="h-full w-full object-cover"
-                          />
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <nav className="flex items-center space-x-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === 1
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Anterior
+                </button>
+                
+                {Array.from({ length: totalPages }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handlePageChange(index + 1)}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === index + 1
+                        ? 'bg-primary-orange text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === totalPages
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Siguiente
+                </button>
+              </nav>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modal para crear/editar testimonio */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-6">
+                {currentTestimonial ? 'Editar Testimonio' : 'Nuevo Testimonio'}
+              </h2>
+              
+              <form onSubmit={handleSubmit}>
+                <div className="grid grid-cols-1 gap-6 mb-6">
+                  {/* Nombre */}
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre del Cliente *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-orange focus:border-primary-orange"
+                    />
+                  </div>
+                  
+                  {/* URL de imagen / Carga de archivos */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Imagen del testimonio
+                    </label>
+                    
+                    {/* Sección de subida de archivos */}
+                    <div className="mt-2 border-2 border-dashed border-gray-300 rounded-md p-4">
+                      <div className="flex flex-col items-center">
+                        <div className="flex justify-center mb-3">
+                          <FaUpload className="text-gray-400 text-2xl" />
                         </div>
-                      )}
-                      <div>
-                        <p className="text-md font-semibold text-gray-900">{testimonial.name}</p>
-                        <div className="flex">{renderStars(testimonial.rating)}</div>
+                        <p className="text-sm text-gray-500 mb-3">
+                          Arrastra una imagen o haz clic aquí para seleccionarla
+                        </p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          id="image-upload"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md text-sm flex items-center"
+                          disabled={isUploading}
+                        >
+                          <FaImage className="mr-2" /> Seleccionar imagen
+                        </button>
+                        {isUploading && (
+                          <div className="mt-3 w-full">
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary-orange" 
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 text-center">{uploadProgress}% subido</p>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div>
-                      <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        testimonial.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {testimonial.isApproved ? 'Aprobado' : 'Pendiente'}
-                      </span>
+                    
+                    {/* Campo URL manual */}
+                    <div className="mt-3">
+                      <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 mb-1">
+                        URL de imagen (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        id="image_url"
+                        name="image_url"
+                        value={formData.image_url}
+                        onChange={handleInputChange}
+                        placeholder="https://ejemplo.com/imagen.jpg"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-orange focus:border-primary-orange"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Este campo se actualiza automáticamente al subir una imagen o puedes ingresar una URL manualmente.
+                      </p>
                     </div>
-                  </div>
-                  
-                  {/* Contenido del testimonio */}
-                  <div className="mb-3">
-                    <p className="text-gray-700 text-sm">{testimonial.text}</p>
-                  </div>
-                  
-                  {/* Imágenes (si las hay) */}
-                  {testimonial.images && testimonial.images.length > 0 && (
-                    <div className="flex space-x-2 mb-3 overflow-x-auto py-1">
-                      {testimonial.images.map((img, index) => (
-                        <div key={index} className="h-20 w-28 flex-shrink-0 rounded overflow-hidden bg-gray-100">
-                          <img 
-                            src={img} 
-                            alt={`Foto ${index + 1}`} 
-                            className="h-full w-full object-cover"
+                    
+                    {/* Vista previa */}
+                    {formData.image_url && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Vista previa:</p>
+                        <div className="relative">
+                          <img
+                            src={formData.image_url}
+                            alt="Vista previa de imagen"
+                            className="h-32 w-full max-w-xs object-cover rounded border border-gray-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Error';
+                            }}
                           />
+                          {formData.image_url.startsWith('data:') && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-yellow-100 border-yellow-400 text-yellow-700 p-1 text-xs">
+                              Imagen en formato base64 (temporal)
+                            </div>
+                          )}
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formData.image_url.startsWith('data:') 
+                            ? 'Esta imagen se almacenará como base64 en la base de datos. Para mejor rendimiento, considere implementar un servicio de almacenamiento de archivos.' 
+                            : 'URL de imagen externa'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Calificación */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Calificación *
+                    </label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRatingChange(star)}
+                          className="text-2xl focus:outline-none"
+                        >
+                          {star <= formData.rating ? (
+                            <FaStar className="text-yellow-500" />
+                          ) : (
+                            <FaRegStar className="text-yellow-500" />
+                          )}
+                        </button>
                       ))}
                     </div>
-                  )}
-                  
-                  {/* Fecha y acciones */}
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="text-gray-500">
-                      <span className="font-medium">Recibido:</span> {formatDate(testimonial.createdAt)}
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <button 
-                        onClick={() => handleApprove(testimonial.id, testimonial.isApproved)}
-                        className={`font-medium ${testimonial.isApproved 
-                          ? 'text-yellow-600 hover:text-yellow-800' 
-                          : 'text-green-600 hover:text-green-800'} transition-colors`}
-                      >
-                        {testimonial.isApproved ? 'Desaprobar' : 'Aprobar'}
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(testimonial)}
-                        className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(testimonial.id)}
-                        className="font-medium text-red-600 hover:text-red-800 transition-colors"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
                   </div>
-                </li>
-              ))}
-            </ul>
+                  
+                  {/* Testimonio */}
+                  <div>
+                    <label htmlFor="testimonial_text" className="block text-sm font-medium text-gray-700 mb-1">
+                      Testimonio *
+                    </label>
+                    <textarea
+                      id="testimonial_text"
+                      name="testimonial_text"
+                      value={formData.testimonial_text}
+                      onChange={handleInputChange}
+                      required
+                      rows={4}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-orange focus:border-primary-orange"
+                      placeholder="Escribe el testimonio del cliente aquí..."
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-primary-orange text-white rounded-md hover:bg-orange-600 disabled:bg-gray-400"
+                    disabled={isSubmitting || isUploading}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                        Guardando...
+                      </div>
+                    ) : currentTestimonial ? 'Actualizar' : 'Crear'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-          
-          {/* Paginación (a implementar) */}
-        </>
+        </div>
       )}
     </div>
   );

@@ -50,3 +50,65 @@ export default tseslint.config({
 ```
 # base-react-tailwind-vite
 # universonomada-webclient
+
+# Universo Nómada Web Client
+
+Frontend para la aplicación Universo Nómada, una plataforma de gestión de viajes y destinos turísticos.
+
+## Funcionalidades Principales
+
+### Sistema de Testimonios
+
+La aplicación cuenta con un sistema completo para la gestión de testimonios de clientes:
+
+1. **Panel de Administración**:
+   - Listado de testimonios con paginación
+   - Formulario para crear nuevos testimonios
+   - Edición de testimonios existentes
+   - Eliminación de testimonios
+   
+2. **Visualización en Frontend**:
+   - Sección dinámica en Home que muestra los testimonios más recientes
+   - Carrusel interactivo para navegar entre testimonios
+   - Visualización de imágenes de viajes y calificaciones
+
+3. **Estructura de Datos**:
+   - Nombre del cliente
+   - Imagen de avatar (opcional)
+   - Calificación (1-5 estrellas)
+   - Texto del testimonio
+   - Imágenes del viaje (opcional, múltiples)
+   - Fecha de creación/actualización
+
+## Estructura del Proyecto
+
+- `/components`: Componentes reutilizables React
+- `/pages`: Páginas principales de la aplicación
+- `/services`: Servicios para comunicación con API
+- `/assets`: Recursos estáticos (imágenes, etc.)
+
+## Tecnologías Utilizadas
+
+- React con TypeScript
+- Tailwind CSS para estilos
+- Framer Motion para animaciones
+- React Router para la navegación
+- Axios para peticiones HTTP
+- React-Toastify para notificaciones
+
+## Desarrollo
+
+1. Instalar dependencias:
+```
+npm install
+```
+
+2. Iniciar servidor de desarrollo:
+```
+npm run dev
+```
+
+3. Construir para producción:
+```
+npm run build
+```
