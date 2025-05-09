@@ -1,21 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { createQuote } from "../services/booking.service";
 import { toast } from "react-hot-toast";
+import axios from "axios";
 
-// Destinos disponibles con sus IDs correspondientes
-const destinos = [
-  { id: 1, name: "San Pedro de Atacama" },
-  { id: 2, name: "Torres del Paine" },
-  { id: 3, name: "Machu Picchu" },
-  { id: 4, name: "Salar de Uyuni" },
-  { id: 5, name: "Isla de Pascua" },
-  { id: 6, name: "Valparaíso" },
-  { id: 7, name: "Carretera Austral" },
-  { id: 8, name: "Cusco" },
-  { id: 9, name: "Lima" },
-  { id: 10, name: "La Paz" },
-];
+// Interfaz para los destinos
+interface Destino {
+  id: number;
+  title: string;
+}
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
 
 const PersonalizaTourForm = () => {
   // Estado para el formulario
@@ -24,6 +19,8 @@ const PersonalizaTourForm = () => {
   );
   const [selectedDestinoName, setSelectedDestinoName] = useState("");
   const [showDestinos, setShowDestinos] = useState(false);
+  const [destinos, setDestinos] = useState<Destino[]>([]);
+  const [loadingDestinos, setLoadingDestinos] = useState(false);
   const [fechaEstablecida, setFechaEstablecida] = useState(true);
   const [fechaSalida, setFechaSalida] = useState("");
   const [fechaRetorno, setFechaRetorno] = useState("");
@@ -42,6 +39,37 @@ const PersonalizaTourForm = () => {
   // Estado de envío del formulario
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Cargar los destinos desde la API
+  useEffect(() => {
+    const fetchDestinos = async () => {
+      setLoadingDestinos(true);
+      try {
+        const response = await axios.get(`${API_URL}/destinations`);
+        let destinosData: Destino[] = [];
+
+        // Intentamos extraer los datos de la estructura de respuesta
+        if (response.data?.success && response.data?.data) {
+          // Si tiene estructura { success: true, data: [...] }
+          destinosData = Array.isArray(response.data.data) 
+            ? response.data.data 
+            : response.data.data.data || [];
+        } else if (Array.isArray(response.data)) {
+          // Si la respuesta es directamente un array
+          destinosData = response.data;
+        }
+
+        setDestinos(destinosData);
+      } catch (error) {
+        console.error("Error al cargar destinos:", error);
+        toast.error("No se pudieron cargar los destinos. Inténtalo de nuevo más tarde.");
+      } finally {
+        setLoadingDestinos(false);
+      }
+    };
+
+    fetchDestinos();
+  }, []);
 
   const incrementarPasajero = (tipo: string) => {
     switch (tipo) {
@@ -148,7 +176,7 @@ const PersonalizaTourForm = () => {
       };
 
       // Enviar al backend
-      const response = await createQuote(quoteData);
+      await createQuote(quoteData);
 
       // Resetear el formulario
       setSelectedDestinoId(null);
@@ -304,19 +332,25 @@ const PersonalizaTourForm = () => {
 
                     {showDestinos && (
                       <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-60 overflow-auto">
-                        {destinos.map((destino) => (
-                          <div
-                            key={destino.id}
-                            className="p-3 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => {
-                              setSelectedDestinoId(destino.id);
-                              setSelectedDestinoName(destino.name);
-                              setShowDestinos(false);
-                            }}
-                          >
-                            {destino.name}
-                          </div>
-                        ))}
+                        {loadingDestinos ? (
+                          <div className="p-3 text-center text-gray-500">Cargando destinos...</div>
+                        ) : destinos.length === 0 ? (
+                          <div className="p-3 text-center text-gray-500">No hay destinos disponibles</div>
+                        ) : (
+                          destinos.map((destino) => (
+                            <div
+                              key={destino.id}
+                              className="p-3 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setSelectedDestinoId(destino.id);
+                                setSelectedDestinoName(destino.title);
+                                setShowDestinos(false);
+                              }}
+                            >
+                              {destino.title}
+                            </div>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>

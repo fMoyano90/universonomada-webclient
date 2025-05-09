@@ -3,6 +3,7 @@ import { getAdminBookings, updateBookingStatus } from '../services/booking.servi
 import { BookingStatus, BookingType } from '../utils/enums';
 import { toast } from 'react-hot-toast';
 
+// Interfaz para el modelo local (con enums tipados)
 interface Booking {
   id: number;
   userId: number;
@@ -48,7 +49,15 @@ const AdminBookingsPage: React.FC = () => {
         selectedStatus || undefined, 
         selectedType || undefined
       );
-      setBookings(result.data);
+      
+      // Convertir las respuestas API (string) a enums tipados para uso local
+      const typedBookings: Booking[] = result.data.map(booking => ({
+        ...booking,
+        status: booking.status as BookingStatus,
+        bookingType: booking.bookingType as BookingType
+      }));
+      
+      setBookings(typedBookings);
       setMeta(result.meta);
     } catch (error) {
       console.error('Error al cargar reservas:', error);
