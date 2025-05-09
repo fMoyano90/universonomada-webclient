@@ -13,7 +13,15 @@ import {
   FiStar, 
   FiArrowRight, 
   FiMaximize2, 
-  FiMinimize2 
+  FiMinimize2,
+  FiUsers,
+  FiCalendar,
+  FiPhone,
+  FiMail,
+  FiUser,
+  FiHome,
+  FiInfo,
+  FiMessageSquare
 } from 'react-icons/fi';
 
 // Interfaz para el modelo local (con enums tipados)
@@ -357,12 +365,13 @@ const AdminBookingsPage: React.FC = () => {
                 <input
                   type="number"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={editingBooking.totalPrice}
+                  value={Math.round(editingBooking.totalPrice)}
                   onChange={(e) => setEditingBooking({
                     ...editingBooking,
-                    totalPrice: parseFloat(e.target.value)
+                    totalPrice: parseInt(e.target.value)
                   })}
                 />
+                <span className="text-xs text-gray-500">Pesos chilenos (sin decimales)</span>
               </div>
               
               <div className="space-y-1">
@@ -509,7 +518,7 @@ const AdminBookingsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{booking.numPeople}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {booking.totalPrice ? `$${booking.totalPrice.toLocaleString()}` : '-'}
+                      {booking.totalPrice ? `$${Math.round(booking.totalPrice).toLocaleString('es-CL')}` : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(booking.createdAt).toLocaleDateString()}
@@ -532,104 +541,129 @@ const AdminBookingsPage: React.FC = () => {
                     <tr>
                       <td colSpan={10} className="px-6 py-4 bg-gray-50">
                         <div className="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
-                          <h4 className="font-semibold mb-4 text-lg border-b pb-2">Detalles de la reserva</h4>
+                          <h4 className="font-semibold mb-4 text-lg border-b pb-2 flex items-center">
+                            <FiInfo className="mr-2 text-indigo-600" /> Detalles de la {booking.bookingType === BookingType.QUOTE ? 'cotización' : 'reserva'}
+                          </h4>
                           
-                          {/* Información detallada */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            {/* Solicitudes especiales */}
-                            {booking.specialRequests && (
-                              <div className="mb-4 col-span-2">
-                                <h5 className="text-sm font-medium text-gray-700 mb-2">Solicitudes especiales:</h5>
-                                <div className="mt-1 whitespace-pre-line text-sm text-gray-600 bg-gray-50 p-3 rounded border">
-                                  {booking.specialRequests}
+                          {/* Información detallada unificada */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Información del grupo */}
+                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 shadow-sm">
+                              <h5 className="text-sm font-medium text-indigo-700 mb-3 flex items-center">
+                                <FiUsers className="mr-2" /> Detalles del grupo
+                              </h5>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                  <span className="text-gray-700 flex items-center"><FiUsers className="mr-2 text-indigo-500" /> Total personas:</span>
+                                  <span className="font-medium text-indigo-800">{booking.numPeople}</span>
                                 </div>
-                              </div>
-                            )}
-
-                            {/* Tarjeta de detalles */}
-                            <div className="bg-gray-50 p-4 rounded border">
-                              <h5 className="text-sm font-medium text-gray-700 mb-2">Detalles del grupo:</h5>
-                              <ul className="space-y-1 text-sm">
-                                {booking.numPeople > 0 && (
-                                  <li className="flex justify-between">
-                                    <span className="text-gray-600">Total personas:</span>
-                                    <span className="font-medium">{booking.numPeople}</span>
-                                  </li>
-                                )}
                                 
-                                {/* Parsear y mostrar detalles del grupo si están en specialRequests */}
                                 {booking.specialRequests && (
                                   <>
                                     {booking.specialRequests.includes('Adultos:') && (
-                                      <li className="flex justify-between">
-                                        <span className="text-gray-600">Adultos:</span>
-                                        <span className="font-medium">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                        <span className="text-gray-700 flex items-center"><FiUser className="mr-2 text-indigo-500" /> Adultos:</span>
+                                        <span className="font-medium text-indigo-800">
                                           {booking.specialRequests.match(/Adultos:\s*(\d+)/)?.[1] || '-'}
                                         </span>
-                                      </li>
+                                      </div>
                                     )}
+                                    
                                     {booking.specialRequests.includes('Niños:') && (
-                                      <li className="flex justify-between">
-                                        <span className="text-gray-600">Niños:</span>
-                                        <span className="font-medium">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                        <span className="text-gray-700 flex items-center"><FiUser className="mr-2 text-indigo-500" /> Niños:</span>
+                                        <span className="font-medium text-indigo-800">
                                           {booking.specialRequests.match(/Niños:\s*(\d+)/)?.[1] || '-'}
                                         </span>
-                                      </li>
+                                      </div>
                                     )}
+                                    
                                     {booking.specialRequests.includes('Infantes:') && (
-                                      <li className="flex justify-between">
-                                        <span className="text-gray-600">Infantes:</span>
-                                        <span className="font-medium">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                        <span className="text-gray-700 flex items-center"><FiUser className="mr-2 text-indigo-500" /> Infantes:</span>
+                                        <span className="font-medium text-indigo-800">
                                           {booking.specialRequests.match(/Infantes:\s*(\d+)/)?.[1] || '-'}
                                         </span>
-                                      </li>
+                                      </div>
                                     )}
+                                    
                                     {booking.specialRequests.includes('Adultos mayores:') && (
-                                      <li className="flex justify-between">
-                                        <span className="text-gray-600">Adultos mayores:</span>
-                                        <span className="font-medium">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                        <span className="text-gray-700 flex items-center"><FiUser className="mr-2 text-indigo-500" /> Adultos mayores:</span>
+                                        <span className="font-medium text-indigo-800">
                                           {booking.specialRequests.match(/Adultos mayores:\s*(\d+)/)?.[1] || '-'}
                                         </span>
-                                      </li>
+                                      </div>
                                     )}
+                                    
                                     {booking.specialRequests.includes('Necesita alojamiento:') && (
-                                      <li className="flex justify-between">
-                                        <span className="text-gray-600">Alojamiento:</span>
-                                        <span className="font-medium">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                        <span className="text-gray-700 flex items-center"><FiHome className="mr-2 text-indigo-500" /> Alojamiento:</span>
+                                        <span className={`font-medium ${booking.specialRequests.includes('Necesita alojamiento: Sí') ? 'text-green-600' : 'text-gray-600'}`}>
                                           {booking.specialRequests.includes('Necesita alojamiento: Sí') ? 'Sí' : 'No'}
                                         </span>
-                                      </li>
+                                      </div>
                                     )}
                                   </>
                                 )}
-                              </ul>
+                                
+                                <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                  <span className="text-gray-700 flex items-center"><FiCalendar className="mr-2 text-indigo-500" /> Fechas:</span>
+                                  <span className="font-medium text-indigo-800">
+                                    {booking.startDate ? `${formatDate(booking.startDate)} al ${formatDate(booking.endDate)}` : 'Fechas flexibles'}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Información de contacto */}
-                            <div className="bg-gray-50 p-4 rounded border">
-                              <h5 className="text-sm font-medium text-gray-700 mb-2">Información de contacto:</h5>
-                              <ul className="space-y-1 text-sm">
+                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 shadow-sm">
+                              <h5 className="text-sm font-medium text-indigo-700 mb-3 flex items-center">
+                                <FiPhoneCall className="mr-2" /> Información de contacto
+                              </h5>
+                              <div className="space-y-3">
                                 {booking.contactName && (
-                                  <li className="flex justify-between">
-                                    <span className="text-gray-600">Nombre:</span>
-                                    <span className="font-medium">{booking.contactName}</span>
-                                  </li>
+                                  <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                    <span className="text-gray-700 flex items-center"><FiUser className="mr-2 text-indigo-500" /> Nombre:</span>
+                                    <span className="font-medium text-indigo-800">{booking.contactName}</span>
+                                  </div>
                                 )}
+                                
                                 {booking.contactPhone && (
-                                  <li className="flex justify-between">
-                                    <span className="text-gray-600">Teléfono:</span>
-                                    <span className="font-medium">{booking.contactPhone}</span>
-                                  </li>
+                                  <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                    <span className="text-gray-700 flex items-center"><FiPhone className="mr-2 text-indigo-500" /> Teléfono:</span>
+                                    <span className="font-medium text-indigo-800">{booking.contactPhone}</span>
+                                  </div>
                                 )}
+                                
                                 {booking.specialRequests && booking.specialRequests.includes('Contacto:') && (
-                                  <li className="flex justify-between">
-                                    <span className="text-gray-600">Detalles:</span>
-                                    <span className="font-medium">
-                                      {booking.specialRequests.match(/Contacto:\s*(.*)/)?.[1] || '-'}
+                                  <div className="flex items-center justify-between px-3 py-2 bg-white rounded border border-indigo-100">
+                                    <span className="text-gray-700 flex items-center"><FiMail className="mr-2 text-indigo-500" /> Email:</span>
+                                    <span className="font-medium text-indigo-800 overflow-hidden text-ellipsis">
+                                      {booking.specialRequests.match(/Contacto:.*?([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/)?.[1] || '-'}
                                     </span>
-                                  </li>
+                                  </div>
                                 )}
-                              </ul>
+
+                                {booking.specialRequests && (
+                                  <div className="mt-3">
+                                    <div className="text-gray-700 flex items-center mb-2">
+                                      <FiMessageSquare className="mr-2 text-indigo-500" /> Solicitudes especiales:
+                                    </div>
+                                    <div className="mt-1 text-sm text-gray-600 bg-white p-3 rounded border border-indigo-100 max-h-40 overflow-y-auto whitespace-pre-line">
+                                      {/* Filtrar información que ya mostramos estructuradamente */}
+                                      {booking.specialRequests
+                                        .replace(/Adultos:\s*\d+/g, '')
+                                        .replace(/Niños:\s*\d+/g, '')
+                                        .replace(/Infantes:\s*\d+/g, '')
+                                        .replace(/Adultos mayores:\s*\d+/g, '')
+                                        .replace(/Necesita alojamiento:\s*(Sí|No)/g, '')
+                                        .replace(/Contacto:\s*.*/g, '')
+                                        .trim() || 'No hay solicitudes adicionales'}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                           
