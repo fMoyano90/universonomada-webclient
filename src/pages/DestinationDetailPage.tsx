@@ -561,7 +561,7 @@ const DestinationDetailPage = () => {
                   onClick={scrollToReservaForm} 
                   className="w-full bg-primary-green text-black font-medium py-4 px-6 rounded-xl hover:bg-primary-green-dark transition-colors mb-3"
                 >
-                  Reservar ahora
+                  Reservar Ahora
                 </button>
 
                 <button 
@@ -790,13 +790,13 @@ const ReservaDestinationForm = ({
 
     try {
       // Importamos dinámicamente para evitar problemas de carga circular
-      const { createQuote } = await import("../services/booking.service");
+      const { createBooking } = await import("../services/booking.service");
       
       // Preparar datos para la API
-      const quoteData = {
+      const bookingData = {
         destinationId: destinationId,
-        startDate: fechaEstablecida ? fechaSalida : undefined,
-        endDate: fechaEstablecida ? fechaRetorno : undefined,
+        startDate: fechaEstablecida ? fechaSalida : null,
+        endDate: fechaEstablecida ? fechaRetorno : null,
         adults: adultos,
         children: ninos,
         infants: infantes,
@@ -811,7 +811,7 @@ const ReservaDestinationForm = ({
       };
 
       // Enviar al backend
-      await createQuote(quoteData);
+      await createBooking(bookingData);
       
       // Resetear el formulario
       setFechaSalida("");
@@ -826,11 +826,77 @@ const ReservaDestinationForm = ({
       setEmail("");
       setTelefono("");
       
-      // Mostrar mensaje de éxito
-      alert("Tu solicitud de reserva ha sido enviada. Nos contactaremos contigo a la brevedad.");
+      // Mostrar mensaje de éxito con diálogo personalizado
+      const dialog = document.createElement('div');
+      dialog.className = 'fixed inset-0 flex items-center justify-center z-50';
+      dialog.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+        <div class="relative bg-white rounded-lg max-w-md mx-auto p-8 shadow-xl transform transition-all">
+          <div class="text-center">
+            <svg class="mx-auto h-16 w-16 text-green-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <h3 class="text-2xl leading-7 font-bold text-gray-900 mb-2">¡Increíble elección!</h3>
+            <div class="mt-3">
+              <p class="text-lg text-gray-600 mb-4">
+                Tu aventura está a punto de comenzar. Hemos recibido tu solicitud y estamos emocionados de ser parte de tu próxima experiencia inolvidable.
+              </p>
+              <p class="text-base text-gray-500 mb-5">
+                Uno de nuestros expertos en viajes se pondrá en contacto contigo muy pronto para personalizar cada detalle de esta maravillosa aventura.
+              </p>
+              <button type="button" class="mt-2 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none">
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dialog);
+      
+      // Evento para el botón de aceptar
+      const button = dialog.querySelector('button');
+      if (button) {
+        button.addEventListener('click', () => {
+          document.body.removeChild(dialog);
+        });
+      }
     } catch (error) {
       console.error("Error al enviar el formulario:", error);
-      alert("Ocurrió un error al enviar tu solicitud. Por favor intenta nuevamente.");
+      
+      // Mostrar mensaje de error con diálogo personalizado
+      const dialogError = document.createElement('div');
+      dialogError.className = 'fixed inset-0 flex items-center justify-center z-50';
+      dialogError.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+        <div class="relative bg-white rounded-lg max-w-md mx-auto p-8 shadow-xl transform transition-all">
+          <div class="text-center">
+            <svg class="mx-auto h-16 w-16 text-amber-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-2xl leading-7 font-bold text-gray-900 mb-2">¡Ups! Algo salió mal</h3>
+            <div class="mt-3">
+              <p class="text-lg text-gray-600 mb-4">
+                Parece que ha ocurrido un problema al procesar tu solicitud de reserva.
+              </p>
+              <p class="text-base text-gray-500 mb-5">
+                Por favor, intenta nuevamente en unos minutos o contáctanos directamente por teléfono para ayudarte con tu reserva.
+              </p>
+              <button type="button" class="mt-2 inline-flex justify-center rounded-md border border-transparent bg-amber-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-amber-700 focus:outline-none">
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dialogError);
+      
+      // Evento para el botón de aceptar en el error
+      const buttonError = dialogError.querySelector('button');
+      if (buttonError) {
+        buttonError.addEventListener('click', () => {
+          document.body.removeChild(dialogError);
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -1173,7 +1239,7 @@ const ReservaDestinationForm = ({
                     Enviando...
                   </>
                 ) : (
-                  'Solicitar Reserva'
+                  'Reservar Ahora'
                 )}
               </button>
             </div>

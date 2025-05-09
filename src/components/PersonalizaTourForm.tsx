@@ -160,8 +160,8 @@ const PersonalizaTourForm = () => {
       // Preparar datos para la API
       const quoteData = {
         destinationId: selectedDestinoId!,
-        startDate: fechaEstablecida ? fechaSalida : undefined,
-        endDate: fechaEstablecida ? fechaRetorno : undefined,
+        startDate: fechaEstablecida ? fechaSalida : null,
+        endDate: fechaEstablecida ? fechaRetorno : null,
         adults: adultos,
         children: ninos,
         infants: infantes,
@@ -193,15 +193,77 @@ const PersonalizaTourForm = () => {
       setEmail("");
       setTelefono("");
 
-      // Mostrar mensaje de éxito
-      toast.success(
-        "¡Recibimos tu solicitud! Nos pondremos en contacto contigo pronto."
-      );
+      // Mostrar mensaje de éxito con modal personalizado
+      const dialogSuccess = document.createElement('div');
+      dialogSuccess.className = 'fixed inset-0 flex items-center justify-center z-50';
+      dialogSuccess.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+        <div class="relative bg-white rounded-lg max-w-md mx-auto p-8 shadow-xl transform transition-all">
+          <div class="text-center">
+            <svg class="mx-auto h-16 w-16 text-green-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <h3 class="text-2xl leading-7 font-bold text-gray-900 mb-2">¡Tu aventura personalizada está en marcha!</h3>
+            <div class="mt-3">
+              <p class="text-lg text-gray-600 mb-4">
+                Estamos emocionados de ayudarte a crear recuerdos increíbles en tu próximo viaje.
+              </p>
+              <p class="text-base text-gray-500 mb-5">
+                Uno de nuestros especialistas en viajes se pondrá en contacto contigo muy pronto para diseñar juntos una experiencia única que superará todas tus expectativas.
+              </p>
+              <button type="button" class="mt-2 inline-flex justify-center rounded-md border border-transparent bg-primary-orange-dark px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-orange-700 focus:outline-none">
+                ¡Genial!
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dialogSuccess);
+      
+      // Evento para el botón de aceptar
+      const buttonSuccess = dialogSuccess.querySelector('button');
+      if (buttonSuccess) {
+        buttonSuccess.addEventListener('click', () => {
+          document.body.removeChild(dialogSuccess);
+        });
+      }
     } catch (error) {
       console.error("Error al enviar el formulario:", error);
-      toast.error(
-        "Ocurrió un error al enviar tu solicitud. Por favor intenta nuevamente."
-      );
+      
+      // Mostrar mensaje de error con modal personalizado
+      const dialogError = document.createElement('div');
+      dialogError.className = 'fixed inset-0 flex items-center justify-center z-50';
+      dialogError.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+        <div class="relative bg-white rounded-lg max-w-md mx-auto p-8 shadow-xl transform transition-all">
+          <div class="text-center">
+            <svg class="mx-auto h-16 w-16 text-amber-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-2xl leading-7 font-bold text-gray-900 mb-2">¡Ups! Algo salió mal</h3>
+            <div class="mt-3">
+              <p class="text-lg text-gray-600 mb-4">
+                Parece que ha ocurrido un problema al procesar tu solicitud de personalización.
+              </p>
+              <p class="text-base text-gray-500 mb-5">
+                Por favor, intenta nuevamente en unos minutos o contáctanos directamente si continúas teniendo problemas.
+              </p>
+              <button type="button" class="mt-2 inline-flex justify-center rounded-md border border-transparent bg-amber-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-amber-700 focus:outline-none">
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dialogError);
+      
+      // Evento para el botón de aceptar en el error
+      const buttonError = dialogError.querySelector('button');
+      if (buttonError) {
+        buttonError.addEventListener('click', () => {
+          document.body.removeChild(dialogError);
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -779,7 +841,7 @@ const PersonalizaTourForm = () => {
             <div className="mt-6 flex justify-center">
               <button
                 type="submit"
-                className={`bg-primary-orange-dark hover:bg-primary-orange-light text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors duration-300 flex items-center ${
+                className={`bg-primary-orange hover:bg-primary-orange-light text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors duration-300 flex items-center ${
                   isSubmitting ? "opacity-70 cursor-not-allowed" : ""
                 }`}
                 disabled={isSubmitting}
@@ -809,7 +871,7 @@ const PersonalizaTourForm = () => {
                     Enviando...
                   </>
                 ) : (
-                  "Solicitar Cotización"
+                  "Solicitar Cotización Personalizada"
                 )}
               </button>
             </div>

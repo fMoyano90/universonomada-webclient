@@ -5,10 +5,10 @@ import authService from './auth.service';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 // Interfaces
-interface CreateQuoteRequest {
+interface BookingRequest {
   destinationId: number;
-  startDate?: string;
-  endDate?: string;
+  startDate?: string | null;
+  endDate?: string | null;
   adults: number;
   children?: number;
   infants?: number;
@@ -20,6 +20,7 @@ interface CreateQuoteRequest {
     email: string;
     phone: string;
   };
+  bookingType?: string; // Tipo de reserva (QUOTE o BOOKING)
 }
 
 interface BookingResponse {
@@ -37,13 +38,41 @@ interface BookingResponse {
   updatedAt: string;
 }
 
-// Crear una cotización
-export const createQuote = async (quoteData: CreateQuoteRequest): Promise<BookingResponse> => {
+// Crear una cotización (desde la página principal)
+export const createQuote = async (quoteData: BookingRequest): Promise<BookingResponse> => {
   try {
-    const response = await axios.post(`${API_URL}/bookings/quote`, quoteData);
+    // Enviamos el valor real del enum
+    const requestData = {
+      ...quoteData,
+      bookingType: "quote" // Valor real del enum
+    };
+    
+    console.log('Enviando datos de cotización:', requestData);
+    console.log('Fechas enviadas (cotización) - inicio:', requestData.startDate, 'fin:', requestData.endDate);
+    
+    const response = await axios.post(`${API_URL}/bookings/quote`, requestData);
     return response.data;
   } catch (error) {
     console.error('Error al crear cotización:', error);
+    throw error;
+  }
+};
+
+// Crear una reserva directa (desde la página de detalle de destino)
+export const createBooking = async (bookingData: BookingRequest): Promise<BookingResponse> => {
+  try {
+    // Enviamos el valor real del enum
+    const requestData = {
+      ...bookingData,
+      bookingType: "booking" // Valor real del enum
+    };
+    
+    console.log('Enviando datos de reserva directa:', requestData);
+    
+    const response = await axios.post(`${API_URL}/bookings/quote`, requestData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear reserva directa:', error);
     throw error;
   }
 };
