@@ -1,5 +1,6 @@
 import axios from 'axios';
 import authService from './auth.service';
+import { BookingStatus, BookingType } from '../utils/enums';
 
 // URL base del servidor (usando la variable de entorno de Vite)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
@@ -36,6 +37,9 @@ interface BookingResponse {
   specialRequests?: string;
   createdAt: string;
   updatedAt: string;
+  destinationName?: string;
+  contactName?: string;
+  contactPhone?: string;
 }
 
 // Crear una cotización (desde la página principal)
@@ -155,8 +159,8 @@ export const getAdminBookings = async (
 // Actualizar el estado de una reserva (para administradores)
 export const updateBookingStatus = async (
   bookingId: number, 
-  status: string,
-  bookingType: string
+  status: BookingStatus,
+  bookingType: BookingType
 ): Promise<BookingResponse> => {
   try {
     const token = authService.getAuthToken();
@@ -187,6 +191,33 @@ export const getBookingById = async (bookingId: number): Promise<BookingResponse
     return response.data;
   } catch (error) {
     console.error('Error al obtener detalles de reserva:', error);
+    throw error;
+  }
+};
+
+// Actualizar una reserva/cotización completa
+export const updateBooking = async (
+  bookingId: number,
+  bookingData: {
+    status?: BookingStatus;
+    bookingType?: BookingType;
+    totalPrice?: number;
+    startDate?: string;
+    endDate?: string;
+    numPeople?: number;
+    specialRequests?: string;
+  }
+): Promise<BookingResponse> => {
+  try {
+    const token = authService.getAuthToken();
+    const response = await axios.put(`${API_URL}/bookings/${bookingId}`, bookingData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar la reserva:', error);
     throw error;
   }
 }; 
