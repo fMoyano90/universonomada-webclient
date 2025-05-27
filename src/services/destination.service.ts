@@ -69,7 +69,7 @@ class DestinationService {
       const token = authService.getAuthToken();
       
       const response = await axios({
-        method: 'put',
+        method: 'patch',
         url: `${API_URL}/destinations/${id}`,
         data: formData,
         headers: {

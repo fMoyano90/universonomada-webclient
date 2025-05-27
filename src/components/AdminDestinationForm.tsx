@@ -72,6 +72,7 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
   const [destination, setDestination] = useState<Destination>(
     destinationToEdit || initialDestinationData
   );
+  const [originalDestination, setOriginalDestination] = useState<Destination | null>(null); // Para comparar cambios
   const [files, setFiles] = useState<DestinationFormFiles>(initialFiles);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -135,22 +136,50 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
         ];
       }
 
-      // 2-4. Asegurar que todos los arrays de strings existan
-      transformedDestination.includes = Array.isArray(
-        transformedDestination.includes
-      )
-        ? transformedDestination.includes
-        : [""];
+      // 2. Manejar includes - procesar estructura específica del backend
+      if (Array.isArray(sourceData.includes)) {
+        // Si los includes vienen como objetos con propiedad 'item', extraer solo los valores
+        if (sourceData.includes.length > 0 && typeof sourceData.includes[0] === 'object' && 'item' in sourceData.includes[0]) {
+          console.log("Includes originales del backend:", sourceData.includes);
+          transformedDestination.includes = sourceData.includes.map((item: unknown) => 
+            typeof item === 'object' && item !== null && 'item' in item 
+              ? (item as {item: string}).item.toString() 
+              : ''
+          ).filter((include: string) => include.trim() !== '');
+          console.log("Includes procesados:", transformedDestination.includes);
+        }
+        // Si ya es un array de strings, no necesitamos hacer nada más
+      }
 
-      transformedDestination.excludes = Array.isArray(
-        transformedDestination.excludes
-      )
-        ? transformedDestination.excludes
-        : [""];
+      // Si después del procesamiento includes sigue vacío, inicializar con valor por defecto
+      if (!transformedDestination.includes || !Array.isArray(transformedDestination.includes) || transformedDestination.includes.length === 0) {
+        transformedDestination.includes = [""];
+      }
 
-      transformedDestination.tips = Array.isArray(transformedDestination.tips)
-        ? transformedDestination.tips
-        : [""];
+      // 3. Manejar excludes - procesar estructura específica del backend
+      if (Array.isArray(sourceData.excludes)) {
+        // Si los excludes vienen como objetos con propiedad 'item', extraer solo los valores
+        if (sourceData.excludes.length > 0 && typeof sourceData.excludes[0] === 'object' && 'item' in sourceData.excludes[0]) {
+          console.log("Excludes originales del backend:", sourceData.excludes);
+          transformedDestination.excludes = sourceData.excludes.map((item: unknown) => 
+            typeof item === 'object' && item !== null && 'item' in item 
+              ? (item as {item: string}).item.toString() 
+              : ''
+          ).filter((exclude: string) => exclude.trim() !== '');
+          console.log("Excludes procesados:", transformedDestination.excludes);
+        }
+        // Si ya es un array de strings, no necesitamos hacer nada más
+      }
+
+      // Si después del procesamiento excludes sigue vacío, inicializar con valor por defecto
+      if (!transformedDestination.excludes || !Array.isArray(transformedDestination.excludes) || transformedDestination.excludes.length === 0) {
+        transformedDestination.excludes = [""];
+      }
+
+      // 4. Asegurar que tips sea un array de strings
+      if (!Array.isArray(transformedDestination.tips)) {
+        transformedDestination.tips = [""];
+      }
 
       // 5. Manejar faqs
       if (!Array.isArray(transformedDestination.faqs)) {
@@ -228,6 +257,9 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
 
       // Actualizar el estado con los datos transformados
       setDestination(transformedDestination);
+      
+      // Guardar una copia de los datos originales para comparar cambios
+      setOriginalDestination(JSON.parse(JSON.stringify(transformedDestination)));
 
       // Actualizar previewUrls
       if (transformedDestination.imageSrc) {
@@ -334,17 +366,32 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
     setDestination((prev) => ({ ...prev, imageSrc: "" }));
   };
 
-  // Eliminar imagen de galería
+  // Eliminar imagen de galería - NUEVA LÓGICA MEJORADA
   const removeGalleryImage = (index: number) => {
+    // Revocar URL de objeto si existe
     if (previewUrls.galleryImages[index]) {
       URL.revokeObjectURL(previewUrls.galleryImages[index]);
     }
 
-    setFiles((prev) => ({
-      ...prev,
-      galleryImageFiles: prev.galleryImageFiles.filter((_, i) => i !== index),
-    }));
+    // Determinar si la imagen a eliminar es un archivo nuevo o una URL existente
+    const totalExistingImages = destination.gallery?.length || 0;
+    
+    if (index < totalExistingImages) {
+      // Es una imagen existente del backend - eliminarla de destination.gallery
+      setDestination((prev) => ({
+        ...prev,
+        gallery: prev.gallery.filter((_, i) => i !== index),
+      }));
+    } else {
+      // Es un archivo nuevo - eliminarla de galleryImageFiles
+      const fileIndex = index - totalExistingImages;
+      setFiles((prev) => ({
+        ...prev,
+        galleryImageFiles: prev.galleryImageFiles.filter((_, i) => i !== fileIndex),
+      }));
+    }
 
+    // Siempre actualizar las URLs de preview
     setPreviewUrls((prev) => ({
       ...prev,
       galleryImages: prev.galleryImages.filter((_, i) => i !== index),
@@ -529,6 +576,65 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
     }));
   };
 
+  // Función para comparar si dos arrays son iguales
+  const arraysEqual = (a: unknown[], b: unknown[]): boolean => {
+    if (a.length !== b.length) return false;
+    return JSON.stringify(a) === JSON.stringify(b);
+  };
+
+  // Función para determinar qué campos han cambiado
+  const getChangedFields = () => {
+    if (!originalDestination || !destinationToEdit) {
+      // Si es creación nueva, enviar todos los campos
+      return {
+        basicFields: destination,
+        hasItineraryChanged: true,
+        hasIncludesChanged: true,
+        hasExcludesChanged: true,
+        hasTipsChanged: true,
+        hasFaqsChanged: true,
+        hasGalleryChanged: true,
+      };
+    }
+
+    const changes = {
+      basicFields: {} as Partial<Destination>,
+      hasItineraryChanged: false,
+      hasIncludesChanged: false,
+      hasExcludesChanged: false,
+      hasTipsChanged: false,
+      hasFaqsChanged: false,
+      hasGalleryChanged: false,
+    };
+
+    // Comparar campos básicos
+    const basicFieldsToCheck = [
+      'title', 'duration', 'activityLevel', 'description', 'price', 
+      'location', 'isRecommended', 'isSpecial', 'type', 'groupSize'
+    ] as const;
+
+    basicFieldsToCheck.forEach(field => {
+      if (destination[field] !== originalDestination[field]) {
+        (changes.basicFields as Record<string, unknown>)[field] = destination[field];
+      }
+    });
+
+    // Comparar activityType (array)
+    if (!arraysEqual(destination.activityType, originalDestination.activityType)) {
+      changes.basicFields.activityType = destination.activityType;
+    }
+
+    // Comparar relaciones
+    changes.hasItineraryChanged = !arraysEqual(destination.itinerary, originalDestination.itinerary);
+    changes.hasIncludesChanged = !arraysEqual(destination.includes, originalDestination.includes);
+    changes.hasExcludesChanged = !arraysEqual(destination.excludes, originalDestination.excludes);
+    changes.hasTipsChanged = !arraysEqual(destination.tips, originalDestination.tips);
+    changes.hasFaqsChanged = !arraysEqual(destination.faqs, originalDestination.faqs);
+    changes.hasGalleryChanged = !arraysEqual(destination.gallery, originalDestination.gallery);
+
+    return changes;
+  };
+
   // --- Handle Form Submission ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -557,59 +663,51 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
     );
 
     try {
+      // Determinar qué campos han cambiado
+      const changedFields = getChangedFields();
+      
+      console.log("=== ANÁLISIS DE CAMBIOS ===");
+      console.log("Campos básicos cambiados:", changedFields.basicFields);
+      console.log("¿Itinerario cambió?", changedFields.hasItineraryChanged);
+      console.log("¿Includes cambió?", changedFields.hasIncludesChanged);
+      console.log("¿Excludes cambió?", changedFields.hasExcludesChanged);
+      console.log("¿Tips cambió?", changedFields.hasTipsChanged);
+      console.log("¿FAQs cambió?", changedFields.hasFaqsChanged);
+      console.log("¿Galería cambió?", changedFields.hasGalleryChanged);
+      console.log("========================");
+
       // Crear un FormData para enviar
       const formData = new FormData();
 
-      // Datos básicos mínimos para prueba
-      formData.append("title", destination.title);
-      formData.append(
-        "slug",
-        destination.title.toLowerCase().replace(/\s+/g, "-")
-      );
-      formData.append("duration", destination.duration);
-      formData.append("activityLevel", destination.activityLevel);
-      formData.append("description", destination.description);
-      formData.append("price", destination.price.toString());
-      formData.append("location", destination.location);
+      // Solo enviar campos básicos que han cambiado
+      Object.entries(changedFields.basicFields).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'isRecommended' || key === 'isSpecial') {
+            // Manejar booleanos correctamente
+            const boolValue = value ? "1" : "0";
+            formData.append(key, boolValue);
+            console.log(`${key}: ${value} → Enviando: ${boolValue}`);
+          } else if (key === 'activityType' && Array.isArray(value)) {
+            // Manejar activityType como array
+            if (value.length > 0) {
+              value.forEach((type, index) => {
+                formData.append(`activityType[${index}]`, String(type));
+              });
+            } else {
+              formData.append("activityType", JSON.stringify([]));
+            }
+          } else if (typeof value === 'string' || typeof value === 'number') {
+            formData.append(key, String(value));
+          }
+        }
+      });
 
-      // VALORES CORRECTOS: Asegurarnos de enviar "1" y "0" (sin posibilidad de error)
-      const recomValue = destination.isRecommended ? "1" : "0";
-      const specValue = destination.isSpecial ? "1" : "0";
-
-      // Asignaciones claras y directas
-      formData.delete("isRecommended"); // Eliminar valores previos si existieran
-      formData.delete("isSpecial");
-
-      formData.append("isRecommended", recomValue);
-      formData.append("isSpecial", specValue);
-
-      // Logs para asegurarnos
-      console.log("======= VALORES BOOLEANOS FINALES =======");
-      console.log(
-        "isRecommended:",
-        destination.isRecommended,
-        "→ Enviando:",
-        recomValue
-      );
-      console.log(
-        "isSpecial:",
-        destination.isSpecial,
-        "→ Enviando:",
-        specValue
-      );
-      console.log("=========================================");
-
-      formData.append("type", destination.type);
-      formData.append("groupSize", destination.groupSize || "");
-
-      // Enviar activityType como array - asegurar que se envía incluso vacío
-      if (destination.activityType && destination.activityType.length > 0) {
-        destination.activityType.forEach((type, index) => {
-          formData.append(`activityType[${index}]`, type);
-        });
-      } else {
-        // Enviar un array vacío como fallback
-        formData.append("activityType", JSON.stringify([]));
+      // Siempre generar slug si el título cambió
+      if (changedFields.basicFields.title) {
+        formData.append(
+          "slug",
+          String(changedFields.basicFields.title).toLowerCase().replace(/\s+/g, "-")
+        );
       }
 
       // Imagen principal
@@ -650,36 +748,51 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
         return;
       }
 
-      // Imágenes de galería
-      if (files.galleryImageFiles.length > 0) {
-        // 1. Adjuntar solo los archivos para el interceptor
-        files.galleryImageFiles.forEach((file) => {
-          formData.append("galleryImages", file);
-        });
-        // 2. NO enviar el JSON string '[]' si estamos enviando archivos.
-        //    El backend procesará los archivos y generará las URLs para el DTO.
-      }
-      // Si no hay archivos nuevos pero sí URLs existentes
-      else if (destination.gallery && destination.gallery.length > 0) {
-        // Preparar el array de objetos con formato { imageUrl: string }
-        const galleryImagesData = destination.gallery
-          .map((url) => {
-            /* ... validación ... */ return url
-              ? { imageUrl: url.trim() }
-              : null;
-          })
-          .filter(Boolean);
+      // Manejar galería solo si cambió o hay archivos nuevos
+      if (changedFields.hasGalleryChanged || files.galleryImageFiles.length > 0) {
+        // Preparar las URLs que el usuario quiere MANTENER (después de eliminaciones)
+        const finalExistingImages = destination.gallery && destination.gallery.length > 0
+          ? destination.gallery
+              .map((url) => {
+                return url && url.trim() !== "" ? { imageUrl: url.trim() } : null;
+              })
+              .filter((item): item is { imageUrl: string } => item !== null)
+          : [];
 
-        // Enviar solo si hay URLs válidas en formato JSON string para el DTO
-        if (galleryImagesData.length > 0) {
-          formData.append("galleryImages", JSON.stringify(galleryImagesData));
+        // Caso 1: Hay archivos nuevos para subir
+        if (files.galleryImageFiles.length > 0) {
+          // 1. Adjuntar los archivos nuevos para que el backend los procese
+          files.galleryImageFiles.forEach((file) => {
+            formData.append("galleryImages", file);
+          });
+
+          // 2. Enviar las URLs existentes que el usuario quiere MANTENER
+          // (esto ya refleja las eliminaciones hechas por el usuario)
+          if (finalExistingImages.length > 0) {
+            finalExistingImages.forEach((imageData, index) => {
+              formData.append(`existingGalleryImages[${index}][imageUrl]`, imageData.imageUrl);
+            });
+          }
         }
-        // Si no hay URLs válidas, no enviamos el campo galleryImages (es opcional)
+        // Caso 2: No hay archivos nuevos, pero hay cambios en URLs existentes
+        // (el usuario pudo haber eliminado algunas fotos existentes)
+        else if (changedFields.hasGalleryChanged) {
+          // Solo enviar si realmente cambió la galería
+          finalExistingImages.forEach((imageData, index) => {
+            formData.append(`galleryImages[${index}][imageUrl]`, imageData.imageUrl);
+          });
+          
+          // Si no hay imágenes finales, enviar un indicador explícito de que se quiere limpiar la galería
+          if (finalExistingImages.length === 0) {
+            formData.append("clearGallery", "true");
+          }
+        }
       }
-      // Si no hay ni archivos ni URLs existentes, no enviamos nada para galleryImages.
 
-      // Manejar itinerario
-      if (destination.itinerary && destination.itinerary.length > 0) {
+      // Solo enviar relaciones que han cambiado
+      
+      // Manejar itinerario solo si cambió
+      if (changedFields.hasItineraryChanged && destination.itinerary && destination.itinerary.length > 0) {
         destination.itinerary.forEach((item, itemIndex) => {
           if (item.day.trim() !== "" && item.title.trim() !== "") {
             formData.append(`itineraryItems[${itemIndex}][day]`, item.day);
@@ -698,35 +811,38 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
         });
       }
 
-      // Manejar includes
-      if (destination.includes && destination.includes.length > 0) {
+      // Manejar includes solo si cambió
+      if (changedFields.hasIncludesChanged && destination.includes && destination.includes.length > 0) {
         destination.includes.forEach((item, index) => {
-          if (item.trim() !== "") {
-            formData.append(`includes[${index}][item]`, item);
+          const itemString = typeof item === 'string' ? item : String(item || '');
+          if (itemString.trim() !== "") {
+            formData.append(`includes[${index}][item]`, itemString);
           }
         });
       }
 
-      // Manejar excludes
-      if (destination.excludes && destination.excludes.length > 0) {
+      // Manejar excludes solo si cambió
+      if (changedFields.hasExcludesChanged && destination.excludes && destination.excludes.length > 0) {
         destination.excludes.forEach((item, index) => {
-          if (item.trim() !== "") {
-            formData.append(`excludes[${index}][item]`, item);
+          const itemString = typeof item === 'string' ? item : String(item || '');
+          if (itemString.trim() !== "") {
+            formData.append(`excludes[${index}][item]`, itemString);
           }
         });
       }
 
-      // Manejar tips
-      if (destination.tips && destination.tips.length > 0) {
+      // Manejar tips solo si cambió
+      if (changedFields.hasTipsChanged && destination.tips && destination.tips.length > 0) {
         destination.tips.forEach((item, index) => {
-          if (item.trim() !== "") {
-            formData.append(`tips[${index}][tip]`, item);
+          const itemString = typeof item === 'string' ? item : String(item || '');
+          if (itemString.trim() !== "") {
+            formData.append(`tips[${index}][tip]`, itemString);
           }
         });
       }
 
-      // Manejar FAQs
-      if (destination.faqs && destination.faqs.length > 0) {
+      // Manejar FAQs solo si cambió
+      if (changedFields.hasFaqsChanged && destination.faqs && destination.faqs.length > 0) {
         destination.faqs.forEach((faq, index) => {
           if (faq.question.trim() !== "" && faq.answer.trim() !== "") {
             formData.append(`faqs[${index}][question]`, faq.question);
@@ -736,7 +852,7 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
       }
 
       // Imprimir el contenido de FormData para depuración
-      console.log("==== Enviando FormData con los siguientes campos: ====");
+      console.log("==== ENVIANDO SOLO CAMPOS CAMBIADOS ====");
       for (const pair of formData.entries()) {
         if (pair[1] instanceof File) {
           console.log(
@@ -748,11 +864,23 @@ const AdminDestinationForm: React.FC<AdminDestinationFormProps> = ({
           console.log(`${pair[0]}: ${pair[1]}`);
         }
       }
-      console.log("============================================");
+      console.log("========================================");
 
-      console.log("SOLUCIÓN RADICAL - CAMPOS SEPARADOS:");
-      console.log("isRecommended (valor JS):", destination.isRecommended);
-      console.log("isSpecial (valor JS):", destination.isSpecial);
+      // Verificar si no hay cambios
+      const hasAnyChanges = Object.keys(changedFields.basicFields).length > 0 ||
+                           changedFields.hasItineraryChanged ||
+                           changedFields.hasIncludesChanged ||
+                           changedFields.hasExcludesChanged ||
+                           changedFields.hasTipsChanged ||
+                           changedFields.hasFaqsChanged ||
+                           changedFields.hasGalleryChanged ||
+                           files.imageSrcFile ||
+                           files.galleryImageFiles.length > 0;
+
+      if (!hasAnyChanges && destinationToEdit) {
+        toast.success("No hay cambios que guardar", { id: loadingToast });
+        return;
+      }
 
       // Usar el servicio de destinos en lugar de la llamada directa a Axios
       let response;
