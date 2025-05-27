@@ -695,7 +695,6 @@ const ReservaDestinationForm = ({
 }) => {
   const [fechaEstablecida, setFechaEstablecida] = useState(true);
   const [fechaSalida, setFechaSalida] = useState("");
-  const [fechaRetorno, setFechaRetorno] = useState("");
   const [adultos, setAdultos] = useState(1);
   const [infantes, setInfantes] = useState(0);
   const [ninos, setNinos] = useState(0);
@@ -753,12 +752,6 @@ const ReservaDestinationForm = ({
       if (!fechaSalida) {
         errors.fechaSalida = "Por favor selecciona una fecha de salida";
       }
-      if (!fechaRetorno) {
-        errors.fechaRetorno = "Por favor selecciona una fecha de retorno";
-      }
-      if (fechaSalida && fechaRetorno && new Date(fechaSalida) >= new Date(fechaRetorno)) {
-        errors.fechas = "La fecha de retorno debe ser posterior a la fecha de salida";
-      }
     }
 
     if (!nombre.trim()) {
@@ -796,7 +789,7 @@ const ReservaDestinationForm = ({
       const bookingData = {
         destinationId: destinationId,
         startDate: fechaEstablecida ? fechaSalida : null,
-        endDate: fechaEstablecida ? fechaRetorno : null,
+        endDate: null,
         adults: adultos,
         children: ninos,
         infants: infantes,
@@ -815,7 +808,6 @@ const ReservaDestinationForm = ({
       
       // Resetear el formulario
       setFechaSalida("");
-      setFechaRetorno("");
       setAdultos(1);
       setInfantes(0);
       setNinos(0);
@@ -998,24 +990,6 @@ const ReservaDestinationForm = ({
                       </div>
                     </div>
 
-                    <div className="mb-6">
-                      <label className="block text-gray-700 font-medium mb-2">
-                        Fecha de retorno
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="date" 
-                          value={fechaRetorno}
-                          onChange={(e) => setFechaRetorno(e.target.value)}
-                          className={`border ${formErrors.fechaRetorno ? 'border-red-500' : 'border-gray-300'} rounded-lg w-full p-3`}
-                          min={fechaSalida || new Date().toISOString().split('T')[0]}
-                        />
-                        {formErrors.fechaRetorno && (
-                          <p className="text-red-500 text-sm mt-1">{formErrors.fechaRetorno}</p>
-                        )}
-                      </div>
-                    </div>
-                    
                     {formErrors.fechas && (
                       <p className="text-red-500 text-sm mt-1 mb-4">{formErrors.fechas}</p>
                     )}
