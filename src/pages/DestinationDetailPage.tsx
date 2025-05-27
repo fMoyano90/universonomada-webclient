@@ -699,7 +699,7 @@ const ReservaDestinationForm = ({
   const [infantes, setInfantes] = useState(0);
   const [ninos, setNinos] = useState(0);
   const [adultosMayores, setAdultosMayores] = useState(0);
-  const [necesitaHotel, setNecesitaHotel] = useState(false);
+  const [necesitaHotel, setNecesitaHotel] = useState("");
   const [solicitudEspecial, setSolicitudEspecial] = useState("");
 
   // Datos de contacto
@@ -768,6 +768,10 @@ const ReservaDestinationForm = ({
       errors.telefono = "Por favor ingresa tu teléfono";
     }
 
+    if (!necesitaHotel) {
+      errors.alojamiento = "Por favor selecciona si necesitas alojamiento";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -794,7 +798,7 @@ const ReservaDestinationForm = ({
         children: ninos,
         infants: infantes,
         seniors: adultosMayores,
-        needsAccommodation: necesitaHotel,
+        needsAccommodation: necesitaHotel === "si",
         specialRequests: solicitudEspecial,
         contactInfo: {
           name: nombre,
@@ -812,7 +816,7 @@ const ReservaDestinationForm = ({
       setInfantes(0);
       setNinos(0);
       setAdultosMayores(0);
-      setNecesitaHotel(false);
+      setNecesitaHotel("");
       setSolicitudEspecial("");
       setNombre("");
       setEmail("");
@@ -997,22 +1001,46 @@ const ReservaDestinationForm = ({
                 )}
 
                 <div className="mb-6">
-                  <div className="flex items-center">
-                    <svg className="h-5 w-5 mr-2 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    <svg className="h-5 w-5 mr-2 text-gray-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <label className="text-gray-700 font-medium">Alojamiento</label>
-                    <input 
-                      type="checkbox" 
-                      id="necesitaHotel" 
-                      className="ml-auto w-4 h-4" 
-                      checked={necesitaHotel}
-                      onChange={() => setNecesitaHotel(!necesitaHotel)}
-                    />
-                    <label htmlFor="necesitaHotel" className="ml-2 text-gray-700">
-                      Necesito hotel
-                    </label>
+                    ¿Necesitas alojamiento?
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={necesitaHotel}
+                      onChange={(e) => setNecesitaHotel(e.target.value)}
+                      className={`border ${
+                        formErrors.alojamiento
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } rounded-lg w-full p-3 pr-10 appearance-none`}
+                    >
+                      <option value="">Selecciona una opción</option>
+                      <option value="si">Sí, necesito alojamiento</option>
+                      <option value="no">No, tengo alojamiento</option>
+                    </select>
+                    <svg
+                      className="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
                   </div>
+                  {formErrors.alojamiento && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.alojamiento}
+                    </p>
+                  )}
                 </div>
 
                 <div className="mb-6">
