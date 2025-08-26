@@ -118,7 +118,7 @@ const ToursSection = () => {
           viewport={{ once: true }}
           className="mb-12"
         >
-          <h2 className="text-4xl font-bold text-gray-800 mb-6 text-center">Conoce nuestros tours</h2>
+          <h2 className="text-4xl font-bold text-gray-800 mb-6 text-center">Descubre nuestros paquetes</h2>
         </motion.div>
 
         {loading && (
@@ -140,7 +140,7 @@ const ToursSection = () => {
         )}
 
         {tours.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tours.map((tour) => (
               <motion.div
                 key={tour.id}
@@ -151,26 +151,26 @@ const ToursSection = () => {
                 whileHover={{ y: -5 }}
                 className="rounded-2xl overflow-hidden shadow-lg bg-white group relative"
               >
-                <div className="relative h-60 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                   <img 
                     src={tour.imageSrc} 
                     alt={tour.title} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                  <div className="absolute top-4 left-4 bg-white py-1 px-4 rounded-full text-sm font-semibold text-primary-blue shadow-md">
+                  <div className="absolute top-3 left-3 bg-white py-1 px-3 rounded-full text-xs font-semibold text-primary-blue shadow-md">
                     {tour.type === 'nacional' || tour.type === 'NACIONAL' ? 'Nacional' : 'Internacional'}
                   </div>
                   {tour.onSale && (
-                    <div className="absolute top-4 right-4 bg-primary-green-dark text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center">
+                    <div className="absolute top-3 right-3 bg-primary-green-dark text-white px-2 py-1 rounded-full text-xs font-bold shadow-md flex items-center">
                       BLACK SALE
                       <span className="ml-1">✈️</span>
                     </div>
                   )}
-                  <h3 className="absolute bottom-4 left-4 text-2xl font-bold text-white drop-shadow-md">{tour.title}</h3>
+                  <h3 className="absolute bottom-3 left-3 text-xl font-bold text-white drop-shadow-md">{tour.title}</h3>
                 </div>
                 
-                <div className="p-5">
+                <div className="p-4">
                   {tour.duration && (
                     <div className="flex items-center mb-3 text-gray-600 font-medium text-sm">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-primary-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -217,4 +217,4 @@ const ToursSection = () => {
   );
 };
 
-export default ToursSection; 
+export default ToursSection;

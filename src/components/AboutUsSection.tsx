@@ -4,9 +4,9 @@ import aboutUsImage from '../assets/images/nosotros.jpg';
 
 const AboutUsSection = () => {
   return (
-    <section className="py-24 px-4 bg-[#f1fae8] relative">
+    <section className="py-16 px-4 bg-[#f1fae8] relative">
       <div className="container mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -14,7 +14,7 @@ const AboutUsSection = () => {
             viewport={{ once: true }}
             className="flex flex-col"
           >
-            <div className="mb-8">
+            <div className="mb-6">
               <motion.div
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
@@ -22,7 +22,7 @@ const AboutUsSection = () => {
                 viewport={{ once: true }}
                 className="inline-block"
               >
-                <div className="text-gray-600 font-light text-2xl tracking-wide">
+                <div className="text-gray-600 font-light text-xl tracking-wide">
                   Universo Nómada
                   <span className="block text-xs text-primary-orange font-normal tracking-widest mt-[-2px]">AGENCIA DE VIAJES</span>
                 </div>
@@ -34,7 +34,7 @@ const AboutUsSection = () => {
               whileInView={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-4xl font-bold text-gray-800 mb-8"
+              className="text-3xl font-bold text-gray-800 mb-6"
             >
               Quienes somos
             </motion.h2>
@@ -44,11 +44,15 @@ const AboutUsSection = () => {
               whileInView={{ opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-gray-700 mb-8 leading-relaxed"
+              className="text-gray-700 mb-6 leading-relaxed"
             >
-              Somos una empresa familiar con más de 20 años de trayectoria, 
-              enfocada en traer sueños y alegría a nuestros pasajeros. Trabajamos 
-              por crear la comunidad de viajes más grande y feliz de todo Chile.
+              En Universo Nómada creemos que viajar es mucho más que moverse: es conectar,
+descubrir y transformar.
+Somos una agencia chilena de turismo personalizado, nacida del amor por los viajes y el deseo
+de crear experiencias auténticas que dejen huella.
+Diseñamos cada ruta con dedicación, priorizando el bienestar del viajero, el respeto por la
+cultura local y el cuidado del entorno natural.
+Tu próximo viaje empieza con una historia… la tuya.
             </motion.p>
             
             <motion.div
@@ -59,7 +63,7 @@ const AboutUsSection = () => {
             >
               <Link 
                 to="/about" 
-                className="inline-block bg-black text-white px-8 py-4 rounded-full font-medium hover:bg-primary-blue transition-colors duration-300"
+                className="inline-block bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-primary-blue transition-colors duration-300"
               >
                 Ver más
               </Link>
@@ -87,4 +91,4 @@ const AboutUsSection = () => {
   );
 };
 
-export default AboutUsSection; 
+export default AboutUsSection;

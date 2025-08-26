@@ -66,7 +66,8 @@ const HeroSlider = () => {
     const fetchSliders = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/sliders`);
+        // Añadir timestamp para evitar cache
+        const response = await axios.get(`${API_URL}/sliders?t=${Date.now()}`);
         
         // Manejar respuesta anidada
         let slidersData;
@@ -102,18 +103,29 @@ const HeroSlider = () => {
     };
 
     fetchSliders();
+    
+    // Configurar actualización automática cada 30 segundos
+    const interval = setInterval(fetchSliders, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const announcements = [
-    "🌟 Tenemos los mejores destinos para tus vacaciones de otoño/invierno 🌟", 
-    "Nuestros viajes son todo coordinado ✈️ 🧳 🚌", 
-    "Black Sale Geoterra!🌎✨",
-    "Conoce las promociones de temporada"
+    "Vive el destino, nosotros nos encargamos de todo 🚐🗺️",     
+    "Planes a tu medida, sin sorpresas ni contratiempos 📌🔎",
+    "Viajes que conectan con la naturaleza y contigo mismo 🌿💫",
+    "¡Aprovecha nuestras rutas destacadas de temporada! 🍂🗺️",
   ];
 
   // Función para cambiar a la siguiente diapositiva
   const nextSlide = () => {
     if (sliders.length <= 1) return;
+    
+    // Limpiar timeout existente para evitar conflictos
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
     setDirection(1);
     setCurrentIndex((prevIndex) => (prevIndex + 1) % sliders.length);
   };
@@ -121,6 +133,12 @@ const HeroSlider = () => {
   // Función para cambiar a la diapositiva anterior
   const prevSlide = () => {
     if (sliders.length <= 1) return;
+    
+    // Limpiar timeout existente para evitar conflictos
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
     setDirection(-1);
     setCurrentIndex((prevIndex) => (prevIndex - 1 + sliders.length) % sliders.length);
   };
@@ -145,32 +163,42 @@ const HeroSlider = () => {
     };
   }, [currentIndex, sliders.length]);
 
-  // Variantes de animación para las diapositivas
+  // Variantes de animación para las diapositivas optimizadas
   const slideVariants = {
     enter: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
       opacity: 0,
+      scale: 1.02,
     }),
     center: {
       x: 0,
       opacity: 1,
+      scale: 1,
     },
     exit: (direction: number) => ({
       x: direction < 0 ? '100%' : '-100%',
       opacity: 0,
+      scale: 0.98,
     }),
   };
 
-  // Si no hay sliders o todavía están cargando, mostrar una pantalla de carga
-  if (loading || sliders.length === 0) {
+  // Solo mostrar loading si es la primera carga y no hay sliders
+  if (loading && sliders.length === 0) {
     return (
       <div className="w-full h-[75vh] flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          {loading ? (
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-blue mx-auto mb-4"></div>
-          ) : (
-            <div className="text-2xl font-bold text-gray-500">No hay destinos disponibles</div>
-          )}
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-blue mx-auto mb-4"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay sliders después de cargar, mostrar mensaje
+  if (!loading && sliders.length === 0) {
+    return (
+      <div className="w-full h-[75vh] flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-500">No hay destinos disponibles</div>
         </div>
       </div>
     );
@@ -200,19 +228,26 @@ const HeroSlider = () => {
             animate="center"
             exit="exit"
             transition={{
-              x: { type: 'spring', stiffness: 300, damping: 30 },
-              opacity: { duration: 0.5 },
+              x: { type: 'tween', ease: 'easeInOut', duration: 0.6 },
+              opacity: { duration: 0.4 },
+              scale: { type: 'tween', ease: 'easeOut', duration: 0.5 },
             }}
             className="absolute inset-0 w-full h-full"
           >
-            <div 
-              className="w-full h-full bg-center bg-cover bg-no-repeat" 
-              style={{ 
-                backgroundImage: `url(${currentSlider.imageUrl})`,
-                backgroundPosition: 'center 25%', // Ajustar posición vertical
-                backgroundColor: '#3D667A' // Color de respaldo mientras carga la imagen
-              }}
-            >
+            <div className="w-full h-full relative overflow-hidden">
+              <img
+                src={currentSlider.imageUrl}
+                alt={currentSlider.title}
+                className="w-full h-full object-cover object-center"
+                style={{
+                  imageRendering: 'crisp-edges',
+                  filter: 'contrast(1.05) saturate(1.05) brightness(1.02)',
+                  backfaceVisibility: 'hidden',
+                  transform: 'translateZ(0)',
+                }}
+                loading="eager"
+                decoding="async"
+              />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60 flex flex-col justify-center items-center text-white">
                 <div className="flex flex-col md:flex-row items-center justify-center h-full w-full">
                   <div className="w-full md:w-1/2 flex flex-col justify-center items-center md:items-end p-8">
@@ -220,7 +255,7 @@ const HeroSlider = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
-                      className="text-lg md:text-xl mb-2 tracking-widest text-primary-orange font-bold bg-gray-900 pr-2 pl-2 rounded-lg"
+                      className="text-sm md:text-lg mb-2 tracking-widest text-primary-orange font-bold bg-gray-900 pr-2 pl-2 rounded-lg"
                     >
                       {currentSlider.location}
                     </motion.h2>
@@ -228,7 +263,7 @@ const HeroSlider = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="text-5xl md:text-7xl font-bold text-center md:text-right mb-4 tracking-wider"
+                      className="text-3xl md:text-5xl font-bold text-center md:text-right mb-4 tracking-wider"
                     >
                       {currentSlider.title}
                     </motion.h1>
@@ -288,6 +323,11 @@ const HeroSlider = () => {
                 <button
                   key={index}
                   onClick={() => {
+                    // Limpiar timeout existente
+                    if (timeoutRef.current) {
+                      clearTimeout(timeoutRef.current);
+                    }
+                    
                     setDirection(index > currentIndex ? 1 : -1);
                     setCurrentIndex(index);
                   }}
@@ -315,13 +355,13 @@ const HeroSlider = () => {
           className="whitespace-nowrap flex items-center"
         >
           {announcements.map((announcement, index) => (
-            <span key={index} className="mx-8 text-lg font-medium">
+            <span key={index} className="mx-6 text-base font-medium">
               {announcement}
             </span>
           ))}
           {/* Repetir para efecto continuo */}
           {announcements.map((announcement, index) => (
-            <span key={`repeat-${index}`} className="mx-8 text-lg font-medium">
+            <span key={`repeat-${index}`} className="mx-6 text-base font-medium">
               {announcement}
             </span>
           ))}
@@ -331,4 +371,4 @@ const HeroSlider = () => {
   );
 };
 
-export default HeroSlider; 
+export default HeroSlider;

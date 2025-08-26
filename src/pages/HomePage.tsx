@@ -8,8 +8,15 @@ import {
   DestacadoTourSection,
   PersonalizaTourForm
 } from '../components';
+import SubscriptionModal from '../components/SubscriptionModal';
+import useSubscriptionModal from '../hooks/useSubscriptionModal';
 
 const HomePage = () => {
+  const { isModalOpen, closeModal } = useSubscriptionModal({
+    delayMs: 30000, // 30 segundos
+    enableExitIntent: true,
+  });
+
   return (
     <div className="min-h-screen">
       <HeroSlider />
@@ -20,6 +27,9 @@ const HomePage = () => {
       <BenefitsSection />
       <TestimonialsSection />
       <AboutUsSection />
+      
+      {/* Modal de suscripción */}
+      <SubscriptionModal isOpen={isModalOpen} onClose={closeModal} />
     </div>
   );
 };

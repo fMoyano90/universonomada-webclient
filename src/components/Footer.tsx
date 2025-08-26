@@ -39,7 +39,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-black text-white pt-16 pb-6">
+    <footer className="bg-black text-white pt-12 pb-6">
       <Toaster
         position="top-center"
         toastOptions={{ className: "text-sm font-medium" }}
@@ -47,9 +47,9 @@ const Footer = () => {
 
       {/* Sección de suscripción */}
       <div className="container mx-auto max-w-6xl px-4">
-        <div className="bg-primary-green-light rounded-xl p-8 mb-16 -mt-24 relative shadow-xl">
-          <div className="mb-5 text-center">
-            <h3 className="text-2xl font-semibold text-black mb-2">
+        <div className="bg-primary-green-light rounded-xl p-6 mb-12 -mt-20 relative shadow-xl">
+          <div className="mb-4 text-center">
+            <h3 className="text-xl font-semibold text-black mb-2">
               ¡Suscríbete y obtén los mejores descuentos!
             </h3>
             <p className="text-gray-700">
@@ -73,7 +73,7 @@ const Footer = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-black text-white py-3 px-8 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              className="bg-black text-white py-3 px-6 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Procesando..." : "Suscribirme"}
             </button>

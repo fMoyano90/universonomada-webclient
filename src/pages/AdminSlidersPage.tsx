@@ -49,7 +49,8 @@ const AdminSlidersPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_URL}/sliders`);
+      // Añadir timestamp para evitar cache del navegador
+      const response = await axios.get(`${API_URL}/sliders?t=${Date.now()}`);
       console.log('Respuesta completa:', response.data);
       
       // Manejar estructura anidada
@@ -145,7 +146,11 @@ const AdminSlidersPage: React.FC = () => {
       // Cerrar modal y refrescar datos
       setIsModalOpen(false);
       resetForm();
-      fetchSliders();
+      
+      // Esperar un momento antes de refrescar para asegurar que el backend haya procesado
+      setTimeout(() => {
+        fetchSliders();
+      }, 500);
 
     } catch (err: unknown) {
       console.error("Error saving slider:", err);

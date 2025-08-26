@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 // Importar imágenes para las tarjetas de destinos
-import imgInternacional from '../assets/images/Cusco/Excursiones-en-Cusco-y-Machu-Picchu-5-dias-1.jpg';
-import imgNacional from '../assets/images/Region atacama/foto-regiones_0012_atacama.jpg';
+import imgInternacional from '../assets/image0.png';
+import imgNacional from '../assets/image1.png';
 
 const DestacadosSection = () => {
   return (
-    <section className="pt-20 pb-16 px-4 bg-white -mt-2">
+    <section className="pt-16 pb-12 px-4 bg-white -mt-2">
       <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -18,7 +18,7 @@ const DestacadosSection = () => {
             className="flex flex-col items-center"
           >
             <motion.div 
-              className="text-primary-green-dark mb-3"
+              className="text-primary-green-dark mb-2"
               whileHover={{ rotate: 15 }}
               transition={{ duration: 0.3 }}
             >
@@ -27,14 +27,14 @@ const DestacadosSection = () => {
               </svg>
             </motion.div>
             
-            <h2 className="text-4xl font-bold text-gray-800 mb-3">¿Dónde quieres Viajar?</h2>
+            <h2 className="text-4xl font-bold text-gray-800 mb-3"> ¿Listo para tu próxima aventura?</h2>
             <p className="text-lg text-gray-600 max-w-3xl">
-              Conoce un destino maravilloso y vive una aventura inolvidable con Universo Nómada Viajes
+              Tú eliges el destino, nosotros lo convertimos en una experiencia inolvidable.
             </p>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Tarjeta destino Internacional */}
           <motion.div 
             initial={{ opacity: 0, x: -50 }}
@@ -42,7 +42,7 @@ const DestacadosSection = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true }}
             whileHover={{ y: -5 }}
-            className="overflow-hidden rounded-2xl shadow-lg group relative h-80"
+            className="overflow-hidden rounded-2xl shadow-lg group relative h-96"
           >
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <img 
@@ -52,9 +52,9 @@ const DestacadosSection = () => {
               />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-              <div className="p-8 w-full">
-                <div className="bg-white/90 backdrop-blur-sm rounded-xl py-3 px-6 inline-block">
-                  <h3 className="text-primary-blue text-xl font-bold">Internacional</h3>
+              <div className="p-6 w-full">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl py-2 px-4 inline-block">
+                  <h3 className="text-primary-blue text-lg font-bold">Internacional</h3>
                 </div>
               </div>
             </div>
@@ -68,7 +68,7 @@ const DestacadosSection = () => {
                 transition={{ duration: 0.5 }}
               />
             </div>
-            <Link to="/internacional" className="absolute inset-0" aria-label="Ver destinos internacionales"></Link>
+            <Link to="/destinos-internacionales" className="absolute inset-0" aria-label="Ver destinos internacionales"></Link>
           </motion.div>
 
           {/* Tarjeta destino Nacional */}
@@ -78,7 +78,7 @@ const DestacadosSection = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true }}
             whileHover={{ y: -5 }}
-            className="overflow-hidden rounded-2xl shadow-lg group relative h-80"
+            className="overflow-hidden rounded-2xl shadow-lg group relative h-96"
           >
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <img 
@@ -88,9 +88,9 @@ const DestacadosSection = () => {
               />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-              <div className="p-8 w-full">
-                <div className="bg-white/90 backdrop-blur-sm rounded-xl py-3 px-6 inline-block">
-                  <h3 className="text-primary-blue text-xl font-bold">Nacionales</h3>
+              <div className="p-6 w-full">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl py-2 px-4 inline-block">
+                  <h3 className="text-primary-blue text-lg font-bold">Nacionales</h3>
                 </div>
               </div>
             </div>
@@ -104,7 +104,7 @@ const DestacadosSection = () => {
                 transition={{ duration: 0.5 }}
               />
             </div>
-            <Link to="/nacional" className="absolute inset-0" aria-label="Ver destinos nacionales"></Link>
+            <Link to="/destinos-nacionales" className="absolute inset-0" aria-label="Ver destinos nacionales"></Link>
           </motion.div>
         </div>
       </div>
@@ -112,4 +112,4 @@ const DestacadosSection = () => {
   );
 };
 
-export default DestacadosSection; 
+export default DestacadosSection;
