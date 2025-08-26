@@ -28,6 +28,7 @@ interface Tour {
   currency?: string;
   type?: string;
   onSale?: boolean;
+  isSpecial?: boolean;
   slug?: string;
   duration?: string;
   location?: string;
@@ -161,9 +162,9 @@ const ToursSection = () => {
                   <div className="absolute top-3 left-3 bg-white py-1 px-3 rounded-full text-xs font-semibold text-primary-blue shadow-md">
                     {tour.type === 'nacional' || tour.type === 'NACIONAL' ? 'Nacional' : 'Internacional'}
                   </div>
-                  {tour.onSale && (
-                    <div className="absolute top-3 right-3 bg-primary-green-dark text-white px-2 py-1 rounded-full text-xs font-bold shadow-md flex items-center">
-                      BLACK SALE
+                  {tour.isSpecial && (
+                    <div className="absolute top-3 right-3 bg-primary-green-dark text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center">
+                      DESTACADO
                       <span className="ml-1">✈️</span>
                     </div>
                   )}

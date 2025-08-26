@@ -22,6 +22,7 @@ interface BookingRequest {
     phone: string;
   };
   bookingType?: string; // Tipo de reserva (QUOTE o BOOKING)
+  needsFlight?: boolean;
 }
 
 interface BookingResponse {
@@ -35,6 +36,7 @@ interface BookingResponse {
   numPeople: number;
   totalPrice: number;
   specialRequests?: string;
+  needsFlight: boolean;
   createdAt: string;
   updatedAt: string;
   destinationName?: string;
@@ -220,4 +222,4 @@ export const updateBooking = async (
     console.error('Error al actualizar la reserva:', error);
     throw error;
   }
-}; 
+};

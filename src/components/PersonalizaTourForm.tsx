@@ -1,26 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { createQuote } from "../services/booking.service";
-import { toast } from "react-hot-toast";
-import axios from "axios";
-
-// Interfaz para los destinos
-interface Destino {
-  id: number;
-  title: string;
-}
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
 
 const PersonalizaTourForm = () => {
   // Estado para el formulario
-  const [selectedDestinoId, setSelectedDestinoId] = useState<number | null>(
-    null
-  );
-  const [selectedDestinoName, setSelectedDestinoName] = useState("");
-  const [showDestinos, setShowDestinos] = useState(false);
-  const [destinos, setDestinos] = useState<Destino[]>([]);
-  const [loadingDestinos, setLoadingDestinos] = useState(false);
+  const [destino, setDestino] = useState("");
   const [fechaEstablecida, setFechaEstablecida] = useState(true);
   const [fechaSalida, setFechaSalida] = useState("");
   const [fechaRetorno, setFechaRetorno] = useState("");
@@ -29,6 +13,7 @@ const PersonalizaTourForm = () => {
   const [ninos, setNinos] = useState(0);
   const [adultosMayores, setAdultosMayores] = useState(0);
   const [necesitaHotel, setNecesitaHotel] = useState("");
+  const [necesitaVuelo, setNecesitaVuelo] = useState("");
   const [solicitudEspecial, setSolicitudEspecial] = useState("");
 
   // Datos de contacto
@@ -40,36 +25,7 @@ const PersonalizaTourForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Cargar los destinos desde la API
-  useEffect(() => {
-    const fetchDestinos = async () => {
-      setLoadingDestinos(true);
-      try {
-        const response = await axios.get(`${API_URL}/destinations`);
-        let destinosData: Destino[] = [];
 
-        // Intentamos extraer los datos de la estructura de respuesta
-        if (response.data?.success && response.data?.data) {
-          // Si tiene estructura { success: true, data: [...] }
-          destinosData = Array.isArray(response.data.data) 
-            ? response.data.data 
-            : response.data.data.data || [];
-        } else if (Array.isArray(response.data)) {
-          // Si la respuesta es directamente un array
-          destinosData = response.data;
-        }
-
-        setDestinos(destinosData);
-      } catch (error) {
-        console.error("Error al cargar destinos:", error);
-        toast.error("No se pudieron cargar los destinos. Inténtalo de nuevo más tarde.");
-      } finally {
-        setLoadingDestinos(false);
-      }
-    };
-
-    fetchDestinos();
-  }, []);
 
   const incrementarPasajero = (tipo: string) => {
     switch (tipo) {
@@ -108,8 +64,8 @@ const PersonalizaTourForm = () => {
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
-    if (!selectedDestinoId) {
-      errors.destino = "Por favor selecciona un destino";
+    if (!destino.trim()) {
+      errors.destino = "Por favor ingresa un destino";
     }
 
     if (fechaEstablecida) {
@@ -163,7 +119,7 @@ const PersonalizaTourForm = () => {
     try {
       // Preparar datos para la API
       const quoteData = {
-        destinationId: selectedDestinoId!,
+        destinationId: 1, // ID temporal - el backend debería manejar destinos como texto libre
         startDate: fechaEstablecida ? fechaSalida : null,
         endDate: fechaEstablecida ? fechaRetorno : null,
         adults: adultos,
@@ -171,7 +127,8 @@ const PersonalizaTourForm = () => {
         infants: infantes,
         seniors: adultosMayores,
         needsAccommodation: necesitaHotel === "si",
-        specialRequests: solicitudEspecial,
+        needsFlight: necesitaVuelo === "si",
+        specialRequests: `Destino solicitado: ${destino}${solicitudEspecial ? ` - ${solicitudEspecial}` : ''}`,
         contactInfo: {
           name: nombre,
           email: email,
@@ -183,8 +140,7 @@ const PersonalizaTourForm = () => {
       await createQuote(quoteData);
 
       // Resetear el formulario
-      setSelectedDestinoId(null);
-      setSelectedDestinoName("");
+      setDestino("");
       setFechaSalida("");
       setFechaRetorno("");
       setAdultos(1);
@@ -192,6 +148,7 @@ const PersonalizaTourForm = () => {
       setNinos(0);
       setAdultosMayores(0);
       setNecesitaHotel("");
+      setNecesitaVuelo("");
       setSolicitudEspecial("");
       setNombre("");
       setEmail("");
@@ -343,81 +300,41 @@ const PersonalizaTourForm = () => {
                     Destino
                   </label>
                   <div className="relative">
-                    <div
+                    <input
+                      type="text"
+                      value={destino}
+                      onChange={(e) => setDestino(e.target.value)}
+                      placeholder="Escribe donde quieres viajar"
                       className={`border ${
                         formErrors.destino
                           ? "border-red-500"
                           : "border-gray-300"
-                      } rounded-lg w-full p-3 flex items-center cursor-pointer`}
-                      onClick={() => setShowDestinos(!showDestinos)}
+                      } rounded-lg w-full p-3 pl-10`}
+                    />
+                    <svg
+                      className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <svg
-                        className="h-5 w-5 mr-2 text-gray-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      {selectedDestinoName || "Selecciona un destino"}
-                      <svg
-                        className={`h-5 w-5 ml-auto text-gray-500 transition-transform ${
-                          showDestinos ? "transform rotate-180" : ""
-                        }`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
-
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
                     {formErrors.destino && (
                       <p className="text-red-500 text-sm mt-1">
                         {formErrors.destino}
                       </p>
-                    )}
-
-                    {showDestinos && (
-                      <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-60 overflow-auto">
-                        {loadingDestinos ? (
-                          <div className="p-3 text-center text-gray-500">Cargando destinos...</div>
-                        ) : destinos.length === 0 ? (
-                          <div className="p-3 text-center text-gray-500">No hay destinos disponibles</div>
-                        ) : (
-                          destinos.map((destino) => (
-                            <div
-                              key={destino.id}
-                              className="p-3 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => {
-                                setSelectedDestinoId(destino.id);
-                                setSelectedDestinoName(destino.title);
-                                setShowDestinos(false);
-                              }}
-                            >
-                              {destino.title}
-                            </div>
-                          ))
-                        )}
-                      </div>
                     )}
                   </div>
                 </div>
@@ -501,58 +418,114 @@ const PersonalizaTourForm = () => {
                   </>
                 )}
 
-                <div className="mb-6">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    <svg
-                      className="h-5 w-5 mr-2 text-gray-700 inline"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                    ¿Necesitas alojamiento?
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={necesitaHotel}
-                      onChange={(e) => setNecesitaHotel(e.target.value)}
-                      className={`border ${
-                        formErrors.alojamiento
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } rounded-lg w-full p-3 pr-10 appearance-none`}
-                    >
-                      <option value="">Selecciona una opción</option>
-                      <option value="si">Sí, necesito alojamiento</option>
-                      <option value="no">No, tengo alojamiento</option>
-                    </select>
-                    <svg
-                      className="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                      <svg
+                        className="h-5 w-5 mr-2 text-gray-700 inline"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                        />
+                      </svg>
+                      ¿Necesitas alojamiento?
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={necesitaHotel}
+                        onChange={(e) => setNecesitaHotel(e.target.value)}
+                        className={`border ${
+                          formErrors.alojamiento
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg w-full p-3 pr-10 appearance-none`}
+                      >
+                        <option value="">Selecciona una opción</option>
+                        <option value="si">Sí, necesito alojamiento</option>
+                        <option value="no">No, tengo alojamiento</option>
+                      </select>
+                      <svg
+                        className="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                    {formErrors.alojamiento && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.alojamiento}
+                      </p>
+                    )}
                   </div>
-                  {formErrors.alojamiento && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.alojamiento}
-                    </p>
-                  )}
+
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                      <svg
+                        className="h-5 w-5 mr-2 text-gray-700 inline"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                        />
+                      </svg>
+                      ¿Necesitas vuelo?
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={necesitaVuelo}
+                        onChange={(e) => setNecesitaVuelo(e.target.value)}
+                        className={`border ${
+                          formErrors.vuelo
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg w-full p-3 pr-10 appearance-none`}
+                      >
+                        <option value="">Selecciona una opción</option>
+                        <option value="si">Sí, necesito vuelo</option>
+                        <option value="no">No, tengo vuelo</option>
+                      </select>
+                      <svg
+                        className="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                    {formErrors.vuelo && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.vuelo}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mb-6">
